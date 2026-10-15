@@ -6,6 +6,8 @@ import { LibraryStore } from '../src/library/store.js';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'page-store-'));
 const H = (c: string) => c.repeat(64).slice(0, 64);
+// Windows 에는 POSIX 권한 비트가 없다 (mode 가 늘 0o666). 권한 단언만 건너뛴다.
+const POSIX = process.platform !== 'win32';
 
 describe('LibraryStore', () => {
   it('creates a private library dir with db + blobs', () => {
@@ -13,7 +15,7 @@ describe('LibraryStore', () => {
     const s = new LibraryStore(dir);
     const lib = path.join(dir, 'library');
     expect(fs.existsSync(path.join(lib, 'library.db'))).toBe(true);
-    expect(fs.statSync(lib).mode & 0o777).toBe(0o700);
+    if (POSIX) expect(fs.statSync(lib).mode & 0o777).toBe(0o700);
     s.close();
   });
 
@@ -67,7 +69,7 @@ describe('LibraryStore', () => {
     const p = s.blobPath(H('c'));
     expect(p.endsWith(path.join('blobs', 'cc', 'cc', H('c')))).toBe(true);
     expect(fs.readFileSync(p)).toEqual(bytes);
-    expect(fs.statSync(p).mode & 0o777).toBe(0o600);
+    if (POSIX) expect(fs.statSync(p).mode & 0o777).toBe(0o600);
     expect(s.assetInfo(H('c'))).toEqual({ mime: 'image/png', size: 3 });
     expect(s.db.prepare('SELECT count(*) AS c FROM lib_assets').get()).toEqual({ c: 1 });
   });

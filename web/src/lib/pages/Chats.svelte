@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../api';
+  import { focusOnMount } from '../appearance/focus';
   import CharImage from '../library/CharImage.svelte';
   import Shelf from '../library/Shelf.svelte';
   import { hrefs } from '../route';
+  import { IMPORTED } from '../sources';
   import { loadShelfView, setShelfView, shelfView } from '../shelf-view.svelte';
   import type { CharInfo, ChatInfo, ShelfChat } from '../types';
   import RenameForm from './RenameForm.svelte';
@@ -34,6 +36,20 @@
     const r = await api.setAlias(source, char, id, name);
     list = (list ?? []).map((c) => (c.chatId === id ? { ...c, displayName: r.displayName } : c));
     editing = null;
+  }
+
+  // 가져온 채팅만: 완전히 지우기 (두 단계). 마지막 채팅이면 캐릭터도 사라지므로 홈으로 돌아간다.
+  let confirming = $state<string | null>(null);
+  let deleteError = $state('');
+  async function removeChat(id: string) {
+    confirming = null;
+    deleteError = '';
+    try {
+      await api.deleteImportChat(char, id);
+      const chars = await api.chars(source);
+      if (!chars.some((c) => c.charId === char)) { location.hash = hrefs.home; return; }
+      await load();
+    } catch { deleteError = '지우지 못했어요.'; }
   }
 
   const asShelf = (c: ChatInfo): ShelfChat => ({
@@ -104,6 +120,29 @@
         {@render chatList(gone, '')}
       </section>
     {/if}
+  {/if}
+
+  {#if source === IMPORTED && live.length}
+    <section class="appearance-section" aria-labelledby="delete-chats" data-part="import-delete">
+      <h2 id="delete-chats">채팅 지우기</h2>
+      <p class="meta">지우면 채팅과 그 책갈피·형광펜이 서고에서도 완전히 사라져요. 마지막 채팅을 지우면 캐릭터도 함께 지워져요.</p>
+      {#if deleteError}<p class="notice" role="alert">{deleteError}</p>{/if}
+      <ul class="item-list">
+        {#each live as c (c.chatId)}
+          <li class="item">
+            <div class="item-head"><span class="item-name">{c.displayName || '(제목 없음)'}</span></div>
+            <div class="row-actions">
+              {#if confirming === c.chatId}
+                <button type="button" aria-label={`${c.displayName || '제목 없음'} 정말 지우기`} use:focusOnMount onclick={() => void removeChat(c.chatId)}>정말 지우기</button>
+                <button type="button" onclick={() => (confirming = null)}>취소</button>
+              {:else}
+                <button type="button" aria-label={`${c.displayName || '제목 없음'} 지우기`} onclick={() => (confirming = c.chatId)}>지우기</button>
+              {/if}
+            </div>
+          </li>
+        {/each}
+      </ul>
+    </section>
   {/if}
 
   {#if recentRead.length}

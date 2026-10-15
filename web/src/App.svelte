@@ -4,6 +4,8 @@
   import Chats from './lib/pages/Chats.svelte';
   import Appearance from './lib/pages/Appearance.svelte';
   import Highlights from './lib/pages/Highlights.svelte';
+  import Import from './lib/pages/Import.svelte';
+  import Source from './lib/pages/Source.svelte';
   import Reader from './lib/reader/Reader.svelte';
   import { router } from './lib/router.svelte';
   import { safeMode } from './lib/theme-link';
@@ -36,6 +38,10 @@
     <Appearance />
   {:else if r.name === 'highlights'}
     <Highlights />
+  {:else if r.name === 'import'}
+    <Import />
+  {:else if r.name === 'source'}
+    <Source />
   {:else}
     <main class="page"><p>없는 화면이에요. <a href="#/">처음으로</a></p></main>
   {/if}

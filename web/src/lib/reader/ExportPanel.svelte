@@ -24,11 +24,19 @@
 
   // 서버가 PDF 를 만들 수 있을 때만 PDF 선택지를 보인다. 목록을 못 받으면 PDF 없이 본다.
   let formats = $state<ExportFormat[]>(['json', 'epub']);
+  // 포터블 판에는 PDF 사이드카가 없다 — PDF 자리에 안내를 낸다. 못 받으면 안내 없이.
+  let portable = $state(false);
   onMount(async () => {
     try {
       const r = await api.exportFormats();
       if (alive) formats = r.formats;
     } catch { /* 기본 목록 그대로 */ }
+  });
+  onMount(async () => {
+    try {
+      const h = await api.app();
+      if (alive) portable = h.portable === true;
+    } catch { /* 안내 없이 */ }
   });
 
   // 사용자가 그림 크기를 직접 골랐는지 — 형식을 오갈 때 기본값을 되돌려도 되는지 가른다
@@ -78,6 +86,8 @@
     <label class="rule-on"><input type="radio" name="export-format" value="epub" checked={format === 'epub'} onchange={() => pickFormat('epub')} /> 책 (EPUB)</label>
     {#if formats.includes('pdf')}
       <label class="rule-on"><input type="radio" name="export-format" value="pdf" checked={format === 'pdf'} onchange={() => pickFormat('pdf')} /> PDF (A5)</label>
+    {:else if portable}
+      <p class="status">PDF 는 Docker 판에서 만들 수 있어요.</p>
     {/if}
     <label class="rule-on"><input type="radio" name="export-format" value="json" checked={format === 'json'} onchange={() => pickFormat('json')} /> RisuAI 가져오기용 (JSON)</label>
   </fieldset>

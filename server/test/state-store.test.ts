@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { StateStore } from '../src/state/store.js';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'page-state-'));
+// Windows 에는 POSIX 권한 비트가 없다 (mode 가 늘 0o666). 권한 단언만 건너뛴다.
+const POSIX = process.platform !== 'win32';
 const pos = (n: number) => ({ msgIdx: n, blockIdx: 1, charOffset: 7, anchorHash: 'deadbeef' });
 
 describe('StateStore', () => {
@@ -12,7 +14,7 @@ describe('StateStore', () => {
     const dir = tmp();
     const s = new StateStore(dir);
     expect(fs.existsSync(path.join(dir, 'state', 'state.db'))).toBe(true);
-    expect(fs.statSync(path.join(dir, 'state')).mode & 0o777).toBe(0o700);
+    if (POSIX) expect(fs.statSync(path.join(dir, 'state')).mode & 0o777).toBe(0o700);
     s.close();
   });
 

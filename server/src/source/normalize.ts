@@ -4,6 +4,7 @@ import type { PageMessage, SourceKind } from './types.js';
 export function normalizeMessage(kind: SourceKind, raw: unknown, idx: number): PageMessage {
   switch (kind) {
     case 'pocketrisu-sqlite':
+    case 'risu-import': // 같은 메시지 모양 (임포트 스펙 §2)
       return normalizePocketRisu(raw, idx);
   }
 }

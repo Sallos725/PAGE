@@ -65,3 +65,15 @@ export type LibraryHighlight = {
   id: string; source: string; charId: string; chatId: string; charName: string; chatTitle: string; deleted: boolean;
   start: ReadingPosition; end: ReadingPosition; text: string; color: string; createdAt: number;
 };
+
+/** 포터블 원본 연결 (포터블 스펙 §4·§6) */
+export type Health = { app: 'page'; portable: boolean; sources: { id: string; status: string }[] };
+/** 화면용 가벼운 정보 (어댑터를 거치지 않는다) */
+export type AppInfo = { app: 'page'; portable: boolean };
+export type PortableSource = { connected: { dir: string; health: { status: string } | null } | null; platform: string };
+export type SourceCheck = { ok: true; kind: 'pocketrisu'; saveDir: string } | { ok: false; reason: 'not-absolute' | 'unc' | 'not-found' | 'unreadable' };
+
+/** 가져오기 (임포트 스펙 §6) */
+/** broken: 정보 파일(char.json)을 못 읽는 캐릭터 — 이름이 없고 지우기만 할 수 있다. */
+export type ImportChar = { charId: string; name: string; broken?: boolean; hasImage: boolean; chatCount: number };
+export type ImportResult = { chatId: string; title: string; messages: number; status: 'new' | 'updated' | 'unchanged' };

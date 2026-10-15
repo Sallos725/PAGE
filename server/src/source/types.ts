@@ -1,4 +1,4 @@
-export type SourceKind = 'pocketrisu-sqlite';
+export type SourceKind = 'pocketrisu-sqlite' | 'risu-import';
 
 export type PageMessage = { idx: number; role: 'user' | 'char'; text: string; time?: number };
 
@@ -32,7 +32,11 @@ export interface CharacterHandle {
   readAsset(name: string): Uint8Array | null;
 }
 
-export type ScanOptions = { only?: { charId: string; chatId: string } };
+export type ScanOptions = {
+  only?: { charId: string; chatId: string };
+  /** 이 캐릭터만 (채팅 전부). `only` 와 마찬가지로 삭제 판단에 쓰이지 않는다. */
+  onlyChar?: string;
+};
 export type ScanResult = {
   /** 소스를 정상적으로 끝까지 읽었는가. false 면 어떤 삭제 판단도 하면 안 된다 (R6). */
   complete: boolean;

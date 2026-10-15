@@ -62,6 +62,7 @@ PAGE 는 [PocketRisu](https://github.com/PocketRisu/PocketRisu) 의 save(SQLite)
 - **타이포그래피와 테마** — 명조(MaruBuri)·고딕, 크기·줄 간격·문단 간격·폭·양쪽 정렬, 밝게·어둡게·세피아, 말풍선 보기. **CSS 로 직접 만드는 테마**(파일로 주고받기)와 **글꼴 올리기**(woff2·ttf·otf — 아이폰에서도 원하는 글꼴로).
 - **나만의 서고로** — 캐릭터·채팅 이름을 PAGE 안에서만 바꾸기, 상태창 같은 조각을 정규식으로 숨기기(캐릭터 카드의 표시용 정규식을 후보로 제안), 내 메시지 숨기고 이야기만 읽기, 카드 정규식의 본문 그림 표시(표정·삽화 — 조건부 그림과 상태창 꾸밈 제외).
 - **보존** — 텍스트와 채팅이 참조하는 이미지를 중복 없이 복사. 원본이 바뀌면 버전으로, 지워지면 "원본에서 지워짐" 으로 남겨요 — RisuAI 에서 지운 채팅도 그대로 읽을 수 있어요. 새 채팅은 알아서 따라오고, 바로 반영하고 싶으면 서고의 **지금 동기화**.
+- **가져오기** — RisuAI 에서 내보낸 채팅 JSON(채팅 내보내기 파일)을 올려 "가져온 채팅" 서고로. PocketRisu 가 없어도 쓸 수 있고, 같은 채팅을 다시 올리면 새 버전으로 쌓이며, 지울 때는 서고 사본·책갈피까지 완전히 지워요.
 - **내보내기** — EPUB(애플 북스·킨들 등, 그림·정규식 포함 여부와 그림 크기 선택), PDF(A5, 쪽 번호·책갈피), RisuAI 로 다시 가져오는 JSON.
 
 <img src="docs/assets/screenshots/settings-phone-dark.png" alt="보기 설정 패널" width="300" align="right">
@@ -82,6 +83,8 @@ PAGE 는 남의 집에 들어가 책만 읽고 나오는 손님처럼 동작해�
 
 필요한 것: Docker(Compose), 그리고 PocketRisu 의 save 폴더(`risuai.db` 가 있는 곳). 이미지는 amd64·arm64(애플 실리콘 Mac·라즈베리파이(64비트 OS) 등) 둘 다 있어요.
 
+> **Windows** 에서 Docker 없이 쓰려면 아래 [Windows (Docker 없이)](#windows-docker-없이) 를 보세요.
+>
 > **Windows · Mac** 에서도 [Docker Desktop](https://www.docker.com/products/docker-desktop/) 으로 돌아갈 거예요(직접 확인은 Linux 에서 했어요). 경로는 `.env` 에 그 컴퓨터의 경로로 적으면 돼요(예: Windows `C:/Users/me/pocketrisu/save`). 아래 `sudo chown` 줄은 Linux 에서만 필요해요.
 
 ```bash
@@ -90,6 +93,8 @@ cp .env.example .env    # PAGE_SAVE_DIR 를 내 save 경로로
 mkdir -p ./page-data && sudo chown 1000:1000 ./page-data   # 데이터 폴더는 uid 1000 이 쓸 수 있어야 해요
 docker compose up -d
 ```
+
+PocketRisu 없이 RisuAI 채팅 JSON 만으로도 쓸 수 있어요(가져오기). 이때는 `docker-compose.yml` 에서 `PAGE_SOURCES` 줄과 save 폴더 마운트 줄을 지우고 올리세요. 열면 서고 머리의 **가져오기** 에서 JSON 을 올려요.
 
 save 폴더는 uid 1000 이 읽을 수 있어야 해요(Linux: 필요하면 `chmod -R a+rX <save 폴더>`).
 
@@ -105,7 +110,7 @@ PDF 내보내기는 같이 올라오는 `page-pdf` 컨테이너(헤드리스 Chr
 | `PAGE_DATA_HOST_DIR` | PAGE 데이터(서고 사본·읽기 상태·테마·글꼴, 기본 `./page-data`). uid 1000 이 쓸 수 있어야 해요. |
 | `PAGE_HOST_PORT` | 호스트 포트 (기본 6008). |
 | `PAGE_HOST_BIND` | 여는 주소 (기본 `127.0.0.1` — 이 컴퓨터에서만). |
-| `PAGE_VERSION` | 이미지 버전 (기본 1.0.0). |
+| `PAGE_VERSION` | 이미지 버전 (기본 1.1.0). |
 | `TZ` | 시간대 (기본 Asia/Seoul). |
 
 컨테이너 안 서버 설정(동기화 주기, 용량 경고 등)은 `PAGE_*` 환경 변수로 바꿀 수 있어요 — [`server/src/config.ts`](server/src/config.ts).
@@ -116,6 +121,8 @@ PDF 내보내기는 같이 올라오는 `page-pdf` 컨테이너(헤드리스 Chr
 
 HTTPS 가 필요하면 리버스 프록시(예: Nginx Proxy Manager, Caddy)를 앞에 두되, 그 도메인도 사설망(Tailscale 등) 안에서만 열리게 하세요.
 
+리버스 프록시 도메인을 `page` 서비스의 `environment` 에 `PAGE_ALLOWED_HOSTS: "page.example.ts.net"` 처럼 적어 두면 DNS rebinding 을 막아요. 적으면 목록에 있는 주소(`호스트` 또는 `호스트:포트`, 쉼표로 구분)로 연 요청만 받아요 — 직접 여는 주소(예: `100.x.y.z`)도 같이 적어 두세요. 루프백(127.0.0.1·localhost)은 늘 허용돼요.
+
 ### 업데이트 · 백업
 
 ```bash
@@ -125,6 +132,24 @@ docker compose pull && docker compose up -d
 ```
 
 백업은 `PAGE_DATA_HOST_DIR` 폴더만 챙기면 돼요. 채팅 사본이 들어 있으니 백업도 암호화해서 보관하는 걸 권해요.
+
+## Windows (Docker 없이)
+
+Docker 없이 압축만 풀어 쓰는 Windows x64(64비트) 포터블판이에요.
+
+1. [Releases](https://github.com/Sallos725/PAGE/releases) 에서 `PAGE-<버전>-win-x64.zip` 을 받아요(옆의 `.sha256` 으로 확인할 수 있어요).
+2. zip 을 원하는 폴더(예: `C:\PAGE`)에 풀어요. zip 안에 바로 `PAGE.exe`·`bin`·`app` 이 들어 있어서 그 폴더에 그대로 놓여요. 경로가 너무 길거나 OneDrive 처럼 동기화되는 폴더는 피하는 게 좋아요.
+3. `PAGE.exe` 를 더블클릭하면 검은 창(서버)이 뜨고 브라우저가 `http://127.0.0.1:8787` 을 열어요. 창을 닫으면 꺼져요.
+4. 처음 실행할 때 **"Windows의 PC 보호"** 창이 뜨면 **추가 정보 → 실행** 을 눌러요(코드 서명을 하지 않아서 뜨는 안내예요).
+5. 쓰는 법은 두 가지예요.
+   - **가져오기** — RisuAI 에서 내보낸 채팅 JSON 을 서고 머리의 가져오기로 올려요.
+   - **원본 연결** — 이 PC 에서 PocketRisu 를 쓰고 있다면 서고 머리의 **원본 연결** 에서 PocketRisu 폴더(안에 `save` 폴더가 있는 곳)를 고르세요. 읽기 전용으로만 열어요.
+6. **업데이트** — PAGE 를 끄고, 새 zip 의 압축을 풀 때 대상 폴더를 **지금 PAGE 폴더**(`PAGE.exe` 가 있는 곳, 예: `C:\PAGE`)로 골라 덮어써요. Windows 가 처음 제안하는 `PAGE-…-win-x64` 새 폴더가 아니에요. 데이터(`data` 폴더)는 zip 에 없어서 그대로 남아요.
+
+- 데이터는 `PAGE.exe` 옆 `data` 폴더에 있어요. 백업은 그 폴더를 복사하면 돼요.
+- 포트를 바꾸려면 `PAGE.exe` 옆에 `page.env` 를 만들고 `PAGE_PORT=8788` 처럼 적어요.
+- 이 컴퓨터(127.0.0.1)에서만 열려요. 폰 등 다른 기기에서 열려면 Docker 판을 쓰세요.
+- **PDF 내보내기는 Docker 판에서만** 돼요. EPUB·JSON 은 포터블에서도 돼요.
 
 ## 소스에서 빌드 · 개발
 

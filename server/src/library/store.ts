@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { assertImported } from '../import/constants.js';
 import { SCHEMA_SQL } from './schema.js';
+import { withRetry } from '../util/fs-retry.js';
 
 type SQLInputValue = null | number | bigint | string | NodeJS.ArrayBufferView;
 
@@ -54,6 +56,79 @@ export class LibraryStore {
       this.db.exec('ROLLBACK');
       throw e;
     }
+  }
+
+  /** 가져온 채팅 완전히 지우기 (임포트 스펙 §5). 다른 버전·캐릭터가 쓰는 매니페스트·메시지·그림은 남긴다. 반복해도 안전하다. */
+  purgeChat(source: string, charId: string, chatId: string): void {
+    assertImported(source);
+    const assets = new Set<string>();
+    this.withSecureDelete(() => this.tx(() => this.purgeChatsIn(source, charId, [chatId], assets)));
+    this.dropUnusedAssets(assets);
+  }
+
+  /** 캐릭터와 그 채팅 전부. 매니페스트 후보는 한 트랜잭션에서 모아 한 번만 스캔한다. */
+  purgeChar(source: string, charId: string): void {
+    assertImported(source);
+    const img = this.getCharImage(source, charId);
+    const assets = new Set<string>(img?.hash ? [img.hash] : []);
+    this.withSecureDelete(() => this.tx(() => {
+      const ids = new Set([
+        ...this.all<{ c: string }>('SELECT chat_id AS c FROM lib_chats WHERE source = ? AND char_id = ?', source, charId).map((r) => r.c),
+        ...this.all<{ c: string }>('SELECT DISTINCT chat_id AS c FROM lib_versions WHERE source = ? AND char_id = ?', source, charId).map((r) => r.c),
+      ]);
+      this.purgeChatsIn(source, charId, [...ids], assets);
+      this.run('DELETE FROM lib_char_images WHERE source = ? AND char_id = ?', source, charId);
+      this.run('DELETE FROM lib_image_rule_slow WHERE source = ? AND char_id = ?', source, charId);
+      this.run('DELETE FROM lib_chars WHERE source = ? AND char_id = ?', source, charId);
+    }));
+    this.dropUnusedAssets(assets);
+  }
+
+  /** 트랜잭션 안에서: 채팅들의 버전·채팅 행을 지우고, 더 이상 안 쓰이는 매니페스트·메시지를 지운다. 그림 후보는 assets 에 모은다. */
+  private purgeChatsIn(source: string, charId: string, chatIds: string[], assets: Set<string>) {
+    const manifests = new Set<string>();
+    for (const chatId of chatIds) {
+      const vers = this.all<{ v: number; m: string }>('SELECT version_id AS v, manifest_hash AS m FROM lib_versions WHERE source = ? AND char_id = ? AND chat_id = ?', source, charId, chatId);
+      for (const { v, m } of vers) {
+        manifests.add(m);
+        for (const a of this.all<{ h: string | null }>('SELECT asset_hash AS h FROM lib_version_assets WHERE version_id = ?', v)) if (a.h) assets.add(a.h);
+        this.run('DELETE FROM lib_version_assets WHERE version_id = ?', v);
+      }
+      this.run('DELETE FROM lib_versions WHERE source = ? AND char_id = ? AND chat_id = ?', source, charId, chatId);
+      this.run('DELETE FROM lib_chats WHERE source = ? AND char_id = ? AND chat_id = ?', source, charId, chatId);
+    }
+    const msgCandidates = new Set<string>();
+    for (const m of manifests) {
+      if (this.get('SELECT 1 AS x FROM lib_versions WHERE manifest_hash = ?', m)) continue; // 다른 버전이 아직 쓴다
+      for (const h of this.getManifest(m) ?? []) msgCandidates.add(h);
+      this.run('DELETE FROM lib_manifests WHERE manifest_hash = ?', m);
+    }
+    if (msgCandidates.size === 0) return;
+    const still = new Set<string>();
+    for (const { m } of this.all<{ m: string }>('SELECT manifest_hash AS m FROM lib_manifests')) for (const h of this.getManifest(m) ?? []) if (msgCandidates.has(h)) still.add(h);
+    for (const h of msgCandidates) if (!still.has(h)) this.run('DELETE FROM lib_msgs WHERE msg_hash = ?', h);
+  }
+
+  /**
+   * 후보 중 어디에서도 안 쓰는 그림만 지운다 (전체 GC 가 아니다 — 동시에 도는 동기화가 막 넣은 그림을 건드리지 않게).
+   * 판정~삭제 사이에 await 가 없다(Node 는 한 스레드라 이 구간에 다른 동기화가 끼어들 수 없다. Syncer 의 hasAsset~참조 쓰기 구간도 마찬가지 — 거기에 await 를 넣지 말 것).
+   * 행을 지운 뒤 파일 삭제가 실패하면 고아 blob 이 남을 수 있다 (같은 내용이 다시 들어오면 덮어쓴다).
+   */
+  dropUnusedAssets(candidates: Set<string>) {
+    for (const h of candidates) {
+      if (this.get('SELECT 1 AS x FROM lib_version_assets WHERE asset_hash = ?', h)) continue;
+      if (this.get('SELECT 1 AS x FROM lib_char_images WHERE asset_hash = ?', h)) continue;
+      this.withSecureDelete(() => this.run('DELETE FROM lib_assets WHERE asset_hash = ?', h));
+      try { withRetry(() => fs.rmSync(this.blobPath(h), { force: true })); } catch { /* 행은 이미 지웠다. 고아 blob 은 남겨 둔다 (위 계약) */ }
+    }
+  }
+
+  /** WAL 을 원본 DB 파일로 내리고 비운다 (secure_delete 로 지운 글자가 -wal 에 남지 않게). */
+  checkpoint() { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); }
+
+  private withSecureDelete<T>(fn: () => T): T {
+    this.db.exec('PRAGMA secure_delete = ON');
+    try { return fn(); } finally { this.db.exec('PRAGMA secure_delete = OFF'); }
   }
 
   private get<T>(sql: string, ...p: SQLInputValue[]): T | undefined { return this.db.prepare(sql).get(...p) as T | undefined; }
@@ -221,7 +296,7 @@ export class LibraryStore {
     fs.mkdirSync(path.dirname(p), { recursive: true, mode: 0o700 });
     const tmp = `${p}.tmp-${process.pid}`;
     fs.writeFileSync(tmp, bytes, { mode: 0o600 });
-    fs.renameSync(tmp, p);
+    withRetry(() => fs.renameSync(tmp, p)); // Windows: 백신·OneDrive 의 순간 잠금
     this.run('INSERT OR IGNORE INTO lib_assets(asset_hash, mime, size, first_seen) VALUES(?,?,?,?)', hash, mime, bytes.length, now);
   }
   setVersionAssets(versionId: number, rows: AssetRefRow[]) {

@@ -8,7 +8,10 @@ import { AM, PNG, baseSpec, writeSource } from './helpers/synthetic-source.js';
 const serverDir = path.join(import.meta.dirname, '..');
 
 describe('smoke-sync (synthetic source)', () => {
-  beforeAll(() => { execFileSync('npm', ['run', 'build'], { cwd: serverDir, stdio: 'pipe' }); }, 120_000);
+  // npm run build 와 같다. Windows 의 npm 은 npm.cmd 라 shell 없이 못 띄우므로 node 로 tsc 를 직접 돌린다.
+  beforeAll(() => {
+    execFileSync(process.execPath, [path.join(serverDir, 'node_modules', 'typescript', 'bin', 'tsc'), '-p', 'tsconfig.json'], { cwd: serverDir, stdio: 'pipe' });
+  }, 120_000);
 
   it('syncs, skips the second run by fingerprint, and every check passes', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'page-smoke-'));
@@ -17,7 +20,7 @@ describe('smoke-sync (synthetic source)', () => {
     spec.manifests = [{ kind: 'character', ownerId: 'c1', items: [[AM(1), 'assets/p.png', 'png']] }];
     spec.assets = { 'assets/p.png': PNG(1) };
     writeSource(path.join(root, 'src'), spec);
-    const out = execFileSync('node', ['--no-warnings', path.join(serverDir, 'dist/tools/smoke-sync.js')], {
+    const out = execFileSync(process.execPath, ['--no-warnings', path.join(serverDir, 'dist/tools/smoke-sync.js')], {
       env: { ...process.env, SMOKE_SOURCE_DIR: path.join(root, 'src'), SMOKE_DATA_DIR: path.join(root, 'data') },
       encoding: 'utf8',
     });

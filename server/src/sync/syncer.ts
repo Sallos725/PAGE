@@ -23,6 +23,8 @@ export type SyncOptions = {
   acceptMassDeletion?: boolean;
   /** 이 채팅 하나만 (삭제 판단·지문 확정은 하지 않는다) */
   only?: { charId: string; chatId: string };
+  /** 이 캐릭터만 (채팅 전부). `only` 와 같이 삭제 판단·지문 확정은 하지 않는다 — 전체 동기화일 때만 한다. */
+  onlyChar?: string;
 };
 
 export type SyncReport = {
@@ -59,6 +61,14 @@ export class Syncer {
     return next;
   }
 
+  /** 원본 단위 큐 안에서 fn 을 실행한다 (가져온 채팅 지우기가 그 원본의 동기화와 겹치지 않게). */
+  exclusive<T>(sourceId: string, fn: () => Promise<T> | T): Promise<T> {
+    const prev = this.chains.get(sourceId) ?? Promise.resolve();
+    const next = prev.then(() => fn(), () => fn());
+    this.chains.set(sourceId, next.catch(() => undefined));
+    return next;
+  }
+
   private finish(report: SyncReport, outcome: SyncReport['outcome'], reason?: string): SyncReport {
     report.outcome = outcome;
     if (reason) report.reason = reason;
@@ -72,7 +82,7 @@ export class Syncer {
     const source = adapter.id;
     const now = this.deps.now();
     const report = newReport(source, now);
-    const full = !opts.only;
+    const full = !opts.only && !opts.onlyChar;
 
     const health = await adapter.health();
     if (health.status === 'unavailable') return this.finish(report, 'skipped', health.reasons.join('; ') || 'source unavailable');
@@ -90,7 +100,7 @@ export class Syncer {
       } catch {
         report.errors++; // 캐릭터 단위 격리: 내용 없는 고정 문구만 기록
       }
-    }, { only: opts.only });
+    }, { only: opts.only, onlyChar: opts.onlyChar });
 
     if (!result.complete) return this.finish(report, 'skipped', result.error ?? 'source scan incomplete');
 
@@ -227,6 +237,7 @@ export class Syncer {
    *  - head 에서 이미 ok 인 이름은 바이트를 다시 읽지 않는다 (계획 가정 5)
    *  - 해석 실패: 추적 대상(Asset Maid) 이름만 'unresolved' 로 기록, 그 밖은 조용히 무시
    *  - 같은 내용은 sha256 으로 1벌 (D15), 여유 공간이 부족하면 복사하지 않고 'deferred' (스펙 3.4.6)
+   *  - hasAsset~참조 쓰기 구간(여기와 processChat 의 tx, syncCharImage)에 await 를 넣지 말 것: 지우기(dropUnusedAssets)와 겹치지 않는 근거다.
    */
   protected resolveAssets(
     _source: string, ch: CharacterHandle, names: string[], headRefs: AssetRefRow[], now: number, report: SyncReport,

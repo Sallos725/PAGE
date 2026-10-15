@@ -32,4 +32,16 @@ describe('hash routes', () => {
     expect(hrefs.appearance).toBe('#/appearance');
     expect(parseHash('#/appearance/x')).toEqual({ name: 'notfound' });
   });
+
+  it('parses the import page', () => {
+    expect(parseHash('#/import')).toEqual({ name: 'import' });
+    expect(hrefs.import).toBe('#/import');
+    expect(parseHash('#/import/x')).toEqual({ name: 'notfound' });
+  });
+
+  it('parses the source page', () => {
+    expect(parseHash('#/source')).toEqual({ name: 'source' });
+    expect(hrefs.source).toBe('#/source');
+    expect(parseHash('#/source/x')).toEqual({ name: 'notfound' });
+  });
 });

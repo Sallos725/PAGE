@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { assertImported } from '../import/constants.js';
 
 export type ReadingPosition = { msgIdx: number; blockIdx: number; charOffset: number; anchorHash: string };
 export type BookmarkKind = 'bookmark' | 'highlight';
@@ -268,6 +269,35 @@ export class StateStore {
   setImageRuleEnabled(source: string, charId: string, key: string, enabled: boolean, now: number) {
     if (enabled) this.db.prepare('DELETE FROM image_rules_off WHERE source = ? AND char_id = ? AND rule_key = ?').run(source, charId, key);
     else this.db.prepare('INSERT OR REPLACE INTO image_rules_off(source,char_id,rule_key,updated_at) VALUES(?,?,?,?)').run(source, charId, key, now);
+  }
+
+  /** 가져온 채팅 완전히 지우기 — 그 채팅의 사용자 상태 (임포트 스펙 §5-5). 형광펜 문장(bookmarks.text)도 같이 지워진다. */
+  purgeChatState(source: string, charId: string, chatId: string) {
+    assertImported(source);
+    this.secureTx(() => {
+      for (const t of ['positions', 'bookmarks', 'kept_chats']) this.db.prepare(`DELETE FROM ${t} WHERE source = ? AND char_id = ? AND chat_id = ?`).run(source, charId, chatId);
+      this.db.prepare("DELETE FROM aliases WHERE source = ? AND kind = 'chat' AND char_id = ? AND chat_id = ?").run(source, charId, chatId);
+    });
+  }
+
+  /** 캐릭터 단위: 위치·책갈피·별칭·보관·카드 그림 규칙 끔 + 캐릭터 범위 숨김 규칙. 전역 규칙과 설정은 건드리지 않는다. */
+  purgeCharState(source: string, charId: string) {
+    assertImported(source);
+    this.secureTx(() => {
+      for (const t of ['positions', 'bookmarks', 'kept_chats', 'aliases', 'image_rules_off']) this.db.prepare(`DELETE FROM ${t} WHERE source = ? AND char_id = ?`).run(source, charId);
+      this.db.prepare("DELETE FROM hide_rules WHERE source = ? AND scope = 'char' AND char_id = ?").run(source, charId);
+    });
+  }
+
+  /** WAL 을 원본 DB 파일로 내리고 비운다 (secure_delete 로 지운 글자가 -wal 에 남지 않게). */
+  checkpoint() { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); }
+
+  private secureTx(fn: () => void) {
+    this.db.exec('PRAGMA secure_delete = ON');
+    try {
+      this.db.exec('BEGIN IMMEDIATE');
+      try { fn(); this.db.exec('COMMIT'); } catch (e) { this.db.exec('ROLLBACK'); throw e; }
+    } finally { this.db.exec('PRAGMA secure_delete = OFF'); }
   }
 
   // ── 보관 (스펙 3D E3). 보관한 채팅만 둔다. 값 = 보관한 시각.

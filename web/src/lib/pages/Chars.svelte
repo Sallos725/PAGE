@@ -1,6 +1,7 @@
 <script lang="ts">
   import Library from '../library/Library.svelte';
   import { hrefs } from '../route';
+  import { sourceLabel } from '../sources';
   let { source }: { source: string } = $props();
 </script>
 
@@ -8,7 +9,7 @@
   <header class="library-aside" data-part="app-header">
     <nav><a href={hrefs.home}>← 서고</a></nav>
     <div class="index">SOURCE</div>
-    <h1 class="library-title">{source}</h1>
+    <h1 class="library-title">{sourceLabel(source)}</h1>
   </header>
   <div class="library-main"><Library {source} /></div>
 </main>

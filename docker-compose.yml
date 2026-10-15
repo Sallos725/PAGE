@@ -4,7 +4,7 @@
 name: page
 services:
   page:
-    image: ghcr.io/sallos725/page:${PAGE_VERSION:-1.0.0}
+    image: ghcr.io/sallos725/page:${PAGE_VERSION:-1.1.0}
     container_name: page
     environment:
       PAGE_SOURCES: "main=/sources/main"
@@ -40,7 +40,7 @@ services:
   # PDF 렌더 사이드카. 호스트 포트 없음, internal 네트워크에만 붙어 밖으로 나가는 길이 없다.
   # PDF 가 필요 없으면 이 서비스와 page 의 depends_on·pdf 네트워크·PAGE_PDF_URL, 아래 networks.pdf 를 지운다.
   page-pdf:
-    image: ghcr.io/sallos725/page-pdf:${PAGE_VERSION:-1.0.0}
+    image: ghcr.io/sallos725/page-pdf:${PAGE_VERSION:-1.1.0}
     container_name: page-pdf
     user: "1000:1000"
     read_only: true

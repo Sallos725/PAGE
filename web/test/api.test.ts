@@ -32,6 +32,12 @@ describe('api client', () => {
     expect(new ApiError(500).message).toBe('HTTP 500');
   });
 
+  it('app: 가벼운 /api/app', async () => {
+    const f = stub(ok({ app: 'page', portable: true }));
+    expect(await api.app()).toEqual({ app: 'page', portable: true });
+    expect(f.mock.calls[0]![0]).toBe('/api/app');
+  });
+
   it('syncChat POSTs without a body', async () => {
     const f = stub(ok({ outcome: 'synced' }));
     await api.syncChat('main', 'c1', 'a1');
@@ -191,5 +197,28 @@ describe('export API client', () => {
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(`/api/fonts?family=${encodeURIComponent('나눔 명조').replace(/%20/g, '+')}`);
     expect(init).toMatchObject({ method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: blob });
+  });
+});
+
+describe('import API client', () => {
+  it('sends the file text as-is as JSON and returns the results', async () => {
+    const f = stub(ok({ results: [{ chatId: 'a', title: 't', messages: 1, status: 'new' }] }));
+    const text = '{"type":"risuChat",  "ver":2,"data":{"id":"a"}}';
+    const r = await api.importChats('c 1'.padEnd(32, 'x'), text);
+    expect(r).toEqual({ results: [{ chatId: 'a', title: 't', messages: 1, status: 'new' }] });
+    const init = f.mock.calls[0]![1]!;
+    expect(f.mock.calls[0]![0]).toBe(`/api/import/chars/${encodeURIComponent('c 1'.padEnd(32, 'x'))}/chats`);
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe(text);
+    expect((init.headers as Record<string, string>)['content-type']).toBe('application/json');
+  });
+
+  it('surfaces error codes and treats a missing chat on delete as done', async () => {
+    stub(ok({ error: 'unsupported-format' }, 400));
+    await expect(api.importChats('x', '{}')).rejects.toMatchObject({ status: 400, code: 'unsupported-format' });
+    stub(new Response(null, { status: 404 }));
+    await expect(api.deleteImportChat('x', 'y')).resolves.toBeUndefined();
+    stub(new Response(null, { status: 204 }));
+    await expect(api.deleteImportChar('x')).resolves.toBeUndefined();
   });
 });

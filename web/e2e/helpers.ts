@@ -32,6 +32,8 @@ export async function resetState(request: APIRequestContext) {
   }
   const themes = (await (await request.get('/api/themes')).json()) as { themes: { id: string }[] };
   for (const t of themes.themes) expect((await request.delete(`/api/themes/${t.id}`)).ok()).toBe(true);
+  const imported = (await (await request.get('/api/import/chars')).json()) as { chars: { charId: string }[] };
+  for (const c of imported.chars) expect((await request.delete(`/api/import/chars/${c.charId}`)).status()).toBe(204);
   const fonts = (await (await request.get('/api/fonts')).json()) as { fonts: { id: string }[] };
   for (const f of fonts.fonts) expect((await request.delete(`/api/fonts/${f.id}`)).ok()).toBe(true);
 }

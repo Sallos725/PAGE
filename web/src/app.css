@@ -101,3 +101,9 @@ button.icon:hover { background: var(--surface-sunken); color: var(--fg); }
 .css-label { display: grid; gap: 6px; }
 .css-input { width: 100%; box-sizing: border-box; font: .85em/1.5 ui-monospace, "SF Mono", Menlo, monospace; background: var(--surface-sunken); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; tab-size: 2; }
 .font-sample { margin: 6px 0 0; font-size: 1.1em; }
+
+/* 가져오기 화면 */
+.import-page .field { display: grid; gap: 6px; margin: 10px 0; }
+.import-page .field select { width: 100%; box-sizing: border-box; }
+.import-page .field select, .import-page .field input[type="text"] { min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface-raised); color: var(--fg); font: inherit; font-family: var(--font-ui); }
+.import-page .row-actions input[type="text"] { min-height: 44px; padding: 0 10px; }

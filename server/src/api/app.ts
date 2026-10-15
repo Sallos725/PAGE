@@ -4,7 +4,9 @@ import helmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyServerOptions } from 'fastify';
 import type { ExportManager } from '../export/jobs.js';
+import type { ImportStore } from '../import/store.js';
 import type { LibraryStore } from '../library/store.js';
+import { IMPORTED_SOURCE } from '../source/import/adapter.js';
 import { normalizeMessage } from '../source/normalize.js';
 import type { SourceAdapter } from '../source/types.js';
 import { CHAPTER_WINDOW } from '../library/chapters.js';
@@ -14,6 +16,9 @@ import { keptKey, type StateStore } from '../state/store.js';
 import type { SyncPolicy, SyncReport, Syncer } from '../sync/syncer.js';
 import { registerAppearanceRoutes } from './appearance-routes.js';
 import { registerExportRoutes } from './export-routes.js';
+import { hostAllowed } from './host-check.js';
+import { registerImportRoutes } from './import-routes.js';
+import { registerPortableRoutes, type PortableApiDeps } from './portable-routes.js';
 
 export type AppDeps = {
   adapters: SourceAdapter[];
@@ -26,6 +31,8 @@ export type AppDeps = {
   appearance?: AppearanceStore;
   /** 내보내기 작업 관리자. 없으면 /api/export 라우트를 만들지 않는다. */
   exportManager?: ExportManager;
+  /** 가져온 채팅 저장소. 있으면 `imported` 어댑터와 함께 /api/import 라우트를 만든다. 없으면 만들지 않는다(404). */
+  imports?: ImportStore;
   /** EPUB 내보내기 그림 용량 한도(바이트). 없으면 produceEpub 기본값(300MB). */
   exportImageBudgetBytes?: number;
   /** PDF 사이드카 주소. 없으면 format:'pdf' 는 400 pdf-unavailable. */
@@ -36,6 +43,12 @@ export type AppDeps = {
   webDir?: string;
   /** pino 옵션 객체(loggerOptions) 또는 false. Fastify 의 로거 타입은 stream 필드를 모르므로 경계에서 한 번만 캐스팅한다. */
   logger?: object | boolean;
+  /** Host 허용 목록. null·없음이면 검사하지 않는다 (스펙 §5.1). */
+  allowedHosts?: string[] | null;
+  /** 포터블 모드 — health 에 싣고 포터블 라우트를 켠다. */
+  portable?: boolean;
+  /** 원본 연결 API 의존성. portable 이 켜져 있을 때만 /api/portable 라우트를 만든다. */
+  portableApi?: PortableApiDeps;
 };
 
 const MAX_LIMIT = 500;
@@ -47,6 +60,16 @@ export async function buildApp(deps: AppDeps) {
   const { store, syncer, policy } = deps;
   const adapters = new Map(deps.adapters.map((a) => [a.id, a]));
   const app = Fastify({ logger: (deps.logger ?? false) as FastifyServerOptions['logger'] });
+
+  const allowedHosts = deps.allowedHosts ?? null;
+  if (allowedHosts) {
+    // 라우트·플러그인보다 먼저 붙인다 (정적 서빙 포함 모든 요청 대상)
+    app.addHook('onRequest', async (req, reply) => {
+      if (hostAllowed(req.headers.host, allowedHosts)) return;
+      app.log.warn('request rejected: host not allowed'); // 헤더 값은 남기지 않는다
+      return reply.code(421).send({ error: 'bad-host' });
+    });
+  }
 
   app.setErrorHandler((err, _req, reply) => {
     const status = (err as { statusCode?: number }).statusCode;
@@ -63,9 +86,14 @@ export async function buildApp(deps: AppDeps) {
     (msgIdx === undefined || !msgCount ? null : Math.min(1, (msgIdx + 1) / msgCount));
 
   if (deps.exportManager) registerExportRoutes(app, { store, state: deps.state, adapters, exportManager: deps.exportManager, imageBudgetBytes: deps.exportImageBudgetBytes, pdfUrl: deps.pdfUrl ?? null, pdfTimeoutMs: deps.pdfTimeoutMs, now: deps.now });
+  const importedAdapter = adapters.get(IMPORTED_SOURCE);
+  if (deps.imports && importedAdapter) await registerImportRoutes(app, { imports: deps.imports, adapter: importedAdapter, syncer, store, state: deps.state, now: deps.now, exportManager: deps.exportManager });
   if (deps.appearance) await registerAppearanceRoutes(app, { appearance: deps.appearance, now: deps.now });
+  if (deps.portable && deps.portableApi) await registerPortableRoutes(app, { ...deps.portableApi, adapters });
 
-  app.get('/api/health', async () => ({ sources: await Promise.all(deps.adapters.map((a) => a.health())) }));
+  // 화면용 가벼운 정보 — 어댑터 health(원본 파일 확인)를 거치지 않는다. 런처 probe·다시 켜기 대기는 /api/health 를 쓴다
+  app.get('/api/app', async () => ({ app: 'page', portable: deps.portable === true }));
+  app.get('/api/health', async () => ({ app: 'page', portable: deps.portable === true, sources: await Promise.all(deps.adapters.map((a) => a.health())) }));
 
   app.get('/api/sources', async () =>
     Promise.all(deps.adapters.map(async (a) => {

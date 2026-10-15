@@ -5,6 +5,8 @@ export type Route =
   | { name: 'read'; source: string; char: string; chat: string }
   | { name: 'appearance' }
   | { name: 'highlights' }
+  | { name: 'import' }
+  | { name: 'source' }
   | { name: 'notfound' };
 
 const dec = (s: string): string | null => {
@@ -21,6 +23,8 @@ export function parseHash(hash: string): Route {
   if (p[0] === 's' && p[2] === 'c' && p.length === 4) return { name: 'chats', source: p[1]!, char: p[3]! };
   if (p[0] === 'appearance' && p.length === 1) return { name: 'appearance' };
   if (p[0] === 'highlights' && p.length === 1) return { name: 'highlights' };
+  if (p[0] === 'import' && p.length === 1) return { name: 'import' };
+  if (p[0] === 'source' && p.length === 1) return { name: 'source' };
   if (p[0] === 'read' && p.length === 4) return { name: 'read', source: p[1]!, char: p[2]!, chat: p[3]! };
   return { name: 'notfound' };
 }
@@ -30,6 +34,8 @@ export const hrefs = {
   home: '#/',
   appearance: '#/appearance',
   highlights: '#/highlights',
+  import: '#/import',
+  source: '#/source',
   chars: (s: string) => `#/s/${e(s)}`,
   chats: (s: string, c: string) => `#/s/${e(s)}/c/${e(c)}`,
   read: (s: string, c: string, h: string) => `#/read/${e(s)}/${e(c)}/${e(h)}`,

@@ -1,5 +1,5 @@
 import type {
-  Bookmark, CharInfo, ChatInfo, EpubOptions, ExportFormat, ExportStatus, FontMeta, HideCandidate, HideRule, HideRuleInput, HideRulePatch, ImageRule, LibraryHighlight, LibraryStatus, MessagesPage, NewBookmark, ReadingPosition, RecentItem, Shelf, SourceInfo, ThemeFull, ThemeMeta,
+  AppInfo, Bookmark, CharInfo, ChatInfo, EpubOptions, ExportFormat, ExportStatus, FontMeta, Health, HideCandidate, HideRule, HideRuleInput, HideRulePatch, ImageRule, ImportChar, ImportResult, LibraryHighlight, LibraryStatus, MessagesPage, NewBookmark, PortableSource, ReadingPosition, RecentItem, Shelf, SourceCheck, SourceInfo, ThemeFull, ThemeMeta,
 } from './types';
 import type { SyncReportLite } from './sync-summary';
 import type { ThemeFile } from './theme-file';
@@ -31,6 +31,8 @@ const q = (o: Record<string, string | number | undefined>) =>
   new URLSearchParams(Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])).toString();
 
 export const api = {
+  health: () => req<Health>('/api/health'),
+  app: () => req<AppInfo>('/api/app'),
   sources: () => req<SourceInfo[]>('/api/sources'),
   status: () => req<LibraryStatus>('/api/library/status'),
   chars: (source: string, o: { includeDeleted?: boolean } = {}) =>
@@ -146,4 +148,42 @@ export const api = {
     const r = await fetch(`/api/fonts/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!r.ok && r.status !== 404) await fail(r);
   },
+
+  // ── 가져오기 (임포트 스펙 §6). 오류는 ApiError.code.
+  importChars: async () => (await req<{ chars: ImportChar[] }>('/api/import/chars')).chars,
+  createImportChar: async (name: string) =>
+    (await req<{ charId: string }>('/api/import/chars', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }) })).charId,
+  renameImportChar: (id: string, name: string) =>
+    req<unknown>(`/api/import/chars/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }) }),
+  setImportCharImage: (id: string, file: Blob) =>
+    req<unknown>(`/api/import/chars/${encodeURIComponent(id)}/image`, { method: 'PUT', headers: { 'content-type': 'application/octet-stream' }, body: file }),
+  deleteImportCharImage: async (id: string) => {
+    const r = await fetch(`/api/import/chars/${encodeURIComponent(id)}/image`, { method: 'DELETE' });
+    if (!r.ok) await fail(r);
+  },
+  /** 파일 글자를 그대로 보낸다 (다시 직렬화하지 않는다). */
+  importChats: (id: string, text: string) =>
+    req<{ results: ImportResult[]; sync?: 'pending' }>(`/api/import/chars/${encodeURIComponent(id)}/chats`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: text,
+    }),
+  /** 204 = 지움, 404 = 이미 없음(성공으로 본다). */
+  deleteImportChat: async (id: string, chatId: string) => {
+    const r = await fetch(`/api/import/chars/${encodeURIComponent(id)}/chats/${encodeURIComponent(chatId)}`, { method: 'DELETE' });
+    if (!r.ok && r.status !== 404) await fail(r);
+  },
+  deleteImportChar: async (id: string) => {
+    const r = await fetch(`/api/import/chars/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!r.ok && r.status !== 404) await fail(r);
+  },
+
+  // ── 포터블 원본 연결 (포터블 스펙 §4). 연결·해제는 202 뒤 서버가 다시 켜진다.
+  portableSource: () => req<PortableSource>('/api/portable/source'),
+  checkPortableSource: (path: string) =>
+    req<SourceCheck>('/api/portable/source/check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path }) }),
+  connectPortableSource: (path: string) =>
+    req<{ restarting: true }>('/api/portable/source', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path }) }),
+  disconnectPortableSource: () => req<{ restarting: true }>('/api/portable/source', { method: 'DELETE' }),
+  /** 본문이 비면 서버가 400 을 준다 — 빈 객체를 보낸다. */
+  browsePortable: () =>
+    req<{ path: string } | { cancelled: true }>('/api/portable/browse', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }),
 };

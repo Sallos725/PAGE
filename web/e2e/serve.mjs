@@ -14,6 +14,8 @@ const { LibraryStore } = await imp('library/store.js');
 const { StateStore } = await imp('state/store.js');
 const { AppearanceStore } = await imp('state/appearance.js');
 const { PocketRisuAdapter } = await imp('source/pocketrisu/adapter.js');
+const { ImportStore } = await imp('import/store.js');
+const { ImportAdapter } = await imp('source/import/adapter.js');
 const { Syncer } = await imp('sync/syncer.js');
 const { buildApp } = await imp('api/app.js');
 const { ExportManager } = await imp('export/jobs.js');
@@ -68,6 +70,8 @@ const policy = {
   freeSpace: () => ({ freeBytes: 1e12, totalBytes: 2e12 }),
 };
 const adapter = new PocketRisuAdapter('main', srcDir);
+const imports = new ImportStore(dataDir);
+const importAdapter = new ImportAdapter(imports);
 const syncer = new Syncer({ store, now: Date.now, policy });
 await syncer.syncSource(adapter);
 // 3D: 원본에서 채팅 하나(gone)와 캐릭터 하나(Carol)를 지운 상태 — 라이브러리에는 삭제 표시로 남는다.
@@ -77,6 +81,6 @@ writeSource(srcDir, spec);
 await syncer.syncSource(adapter, { force: true });
 
 const exportManager = new ExportManager({ dir: path.join(dataDir, 'exports'), now: Date.now });
-const app = await buildApp({ adapters: [adapter], store, syncer, policy, now: Date.now, state, appearance, exportManager, webDir: web });
+const app = await buildApp({ adapters: [adapter, importAdapter], imports, store, syncer, policy, now: Date.now, state, appearance, exportManager, webDir: web });
 await app.listen({ host: '127.0.0.1', port: Number(process.env.E2E_PORT ?? 4173) });
 console.log('e2e server ready');

@@ -134,7 +134,8 @@ describe('produceEpub', () => {
   });
 });
 
-const hasJava = spawnSync('java', ['-version']).status === 0;
+// epubcheck.sh 는 bash 스크립트라 Windows 에서는 shell 없이 실행할 수 없다(EFTYPE). 검사는 Linux·macOS 에서만 한다.
+const canEpubcheck = process.platform !== 'win32' && spawnSync('java', ['-version']).status === 0;
 
 describe('produceEpub image modes (X8)', () => {
   const gradient = (w: number, h: number, seed: number) => {
@@ -268,7 +269,7 @@ describe('produceEpub image modes (X8)', () => {
     expect(started).toBeLessThanOrEqual(4); // 첫 창(0..3)만 변환했고, 4 번부터는 한도가 찬 걸 보고 건너뛴다
   });
 
-  it.skipIf(!hasJava)('produces an EPUB that epubcheck accepts with WebP and with JPEG images (skipped when java is missing)', async () => {
+  it.skipIf(!canEpubcheck)('produces an EPUB that epubcheck accepts with WebP and with JPEG images (skipped without java or on Windows)', async () => {
     const script = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'scripts', 'epubcheck.sh');
     for (const imageMode of ['small', 'compat'] as const) {
       const { tmp } = await run(['a', 'b'], { a: await transparent(400, 300), b: await gradient(200, 100, 3) }, await transparent(60, 90), { imageMode });

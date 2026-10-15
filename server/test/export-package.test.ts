@@ -76,8 +76,9 @@ describe('EPUB package', () => {
     await expect(buildEpub(input({ images: [{ ...im, href: 'images/cover.png' }] }))).rejects.toThrow('epub: duplicate-path');
   });
 
-  const hasJava = spawnSync('java', ['-version']).status === 0;
-  it.skipIf(!hasJava)('passes epubcheck (skipped when java is missing)', async () => {
+  // epubcheck.sh 는 bash 스크립트라 Windows 에서는 shell 없이 실행할 수 없다(EFTYPE). 검사는 Linux·macOS 에서만 한다.
+  const canEpubcheck = process.platform !== 'win32' && spawnSync('java', ['-version']).status === 0;
+  it.skipIf(!canEpubcheck)('passes epubcheck (skipped without java or on Windows)', async () => {
     const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'page-epub-')), 'synthetic.epub');
     fs.writeFileSync(f, await buildEpub(input()));
     const script = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'scripts', 'epubcheck.sh');

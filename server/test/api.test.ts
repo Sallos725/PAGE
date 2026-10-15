@@ -29,7 +29,7 @@ describe('read API', () => {
     const { app } = await setup();
     expect(j(await app.inject('/api/sources'))).toEqual([expect.objectContaining({ id: 'main', kind: 'pocketrisu-sqlite', status: 'ok' })]);
     const health = j(await app.inject('/api/health'));
-    expect(health).toEqual({ sources: [{ id: 'main', kind: 'pocketrisu-sqlite', status: 'ok', reasons: [] }] });
+    expect(health).toEqual({ app: 'page', portable: false, sources: [{ id: 'main', kind: 'pocketrisu-sqlite', status: 'ok', reasons: [] }] });
   });
 
   it('GET /api/chars and /api/chats (includeDeleted)', async () => {

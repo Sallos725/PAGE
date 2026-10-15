@@ -71,6 +71,15 @@ curl -fsS http://127.0.0.1:18787/api/fonts.css | grep -q '"smoke"' || fail fonts
 curl -fsSI "http://127.0.0.1:18787/api/fonts/$FONT" | grep -qi 'content-type: font/woff2' || fail font-get
 curl -fsS -X DELETE "http://127.0.0.1:18787/api/themes/$THEME" -o /dev/null || fail theme-delete
 curl -fsS -X DELETE "http://127.0.0.1:18787/api/fonts/$FONT" -o /dev/null || fail font-delete
+# 채팅 가져오기: 캐릭터 만들기 → 합성 RisuAI 채팅 JSON 올리기 → 서고에 1개 → 캐릭터 완전히 지우기 → 목록 비어 있음
+curl -fsS http://127.0.0.1:18787/api/sources | grep -q '"id":"imported"' || fail import-source
+ICHAR="$(curl -fsS -X POST -H 'content-type: application/json' -d '{"name":"smoke import"}' http://127.0.0.1:18787/api/import/chars | grep -o '[0-9a-f]\{32\}' | head -1)" || fail import-char
+[ -n "$ICHAR" ] || fail import-char-id
+printf '%s' '{"type":"risuChat","ver":2,"data":{"id":"smoke1","name":"smoke","lastDate":1,"message":[{"role":"user","data":"hi"},{"role":"char","data":"hello"}]}}' \
+  | curl -fsS -X POST -H 'content-type: application/json' --data-binary @- "http://127.0.0.1:18787/api/import/chars/$ICHAR/chats" | grep -q '"status":"new"' || fail import-upload
+[ "$(curl -fsS "http://127.0.0.1:18787/api/chats?source=imported&char=$ICHAR" | grep -o '"chatId"' | wc -l)" -eq 1 ] || fail import-chats
+curl -fsS -X DELETE "http://127.0.0.1:18787/api/import/chars/$ICHAR" -o /dev/null || fail import-delete
+curl -fsS http://127.0.0.1:18787/api/import/chars | grep -q '"chars":\[\]' || fail import-empty
 curl -fsSI http://127.0.0.1:18787/ | grep -qi "content-security-policy: default-src 'self'" || fail csp
 curl -fsS http://127.0.0.1:18787/ | grep -q '<div id="app">' || fail spa
 ASSET="$(curl -fsS http://127.0.0.1:18787/ | grep -o '/assets/[^"]*\.js' | head -1)"

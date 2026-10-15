@@ -81,7 +81,7 @@ export function registerExportRoutes(app: FastifyInstance, deps: ExportRouteDeps
         : format === 'epub'
           ? (tmp) => produceEpub(epubCtx(), { ...DEFAULT_EPUB_OPTIONS, ...options }, tmp)
           : (tmp) => producePdf({ ...epubCtx(), pdfUrl: pdfUrl!, pdfTimeoutMs: deps.pdfTimeoutMs }, { ...DEFAULT_EPUB_OPTIONS, imageMode: 'compat', ...options }, tmp);
-      const job = exportManager.start(format, produce);
+      const job = exportManager.start(format, produce, { source, charId: char, chatId: chat }); // id 만 — 완전히 지울 때 결과물도 지운다
       if (!job) return reply.code(429).send({ error: 'too many exports' });
       return reply.code(202).send({ jobId: job.jobId });
     });

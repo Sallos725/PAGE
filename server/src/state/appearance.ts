@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { FONT_LIMITS, THEME_LIMITS, cssBytes, isFamily, isThemeBase, isThemeName, type ThemeBase, type ThemeFile } from '../shared/theme-file.js';
+import { withRetry } from '../util/fs-retry.js';
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS themes(
@@ -135,7 +136,7 @@ export class AppearanceStore {
     const tmp = `${file}.tmp`;
     try {
       fs.writeFileSync(tmp, buf, { mode: 0o600 });
-      fs.renameSync(tmp, file);
+      withRetry(() => fs.renameSync(tmp, file)); // Windows: 백신·OneDrive 의 순간 잠금
     } catch (e) {
       fs.rmSync(tmp, { force: true });
       throw e;

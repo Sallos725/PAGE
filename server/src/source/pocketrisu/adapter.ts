@@ -132,6 +132,7 @@ export class PocketRisuAdapter implements SourceAdapter {
         }
         const only = options.only;
         if (only && only.charId !== charId) continue; // only 스캔은 삭제 판단에 쓰이지 않는다
+        if (options.onlyChar && options.onlyChar !== charId) continue;
         const chats = this.readChats(db, c, only);
         const ids = seen.get(charId) ?? new Set<string>();
         for (const r of chats) ids.add(r.ok ? r.chat.chatId : r.chatId);
