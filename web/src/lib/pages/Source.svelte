@@ -89,7 +89,8 @@
   }
 </script>
 
-<main class="page appearance-page source-page" data-part="source">
+<!-- 가져오기 화면과 같은 모양: appearance-section(버튼)·import-page .field(입력 칸)·actions(버튼 줄) -->
+<main class="page appearance-page import-page source-page" data-part="source">
   {#if !restarting}<nav><a href={hrefs.home}>← 서고</a></nav>{/if}
   <h1>원본 연결</h1>
   {#if restartFailed && !restarting}<p class="notice" role="alert">PAGE 가 다시 켜지지 않았어요. PAGE 창(검은 창)을 확인해 주세요.</p>{/if}
@@ -98,31 +99,38 @@
   {:else if failed}
     <p class="notice" role="alert">원본 연결 정보를 불러오지 못했어요.</p>
   {:else if info}
-    <section>
-      <h2>지금 상태</h2>
+    <section class="appearance-section" aria-labelledby="source-now">
+      <h2 id="source-now">지금 상태</h2>
       {#if info.connected}
         <p>PocketRisu 연결됨 · <code>{info.connected.dir}</code>{#if info.connected.health?.status === 'degraded'} · 일부를 읽지 못하고 있어요{:else if info.connected.health && info.connected.health.status !== 'ok'} · 지금은 읽을 수 없어요{/if}</p>
         {#if confirmOff}
           <p>연결을 해제해도 서고에 들어온 책은 남아요.</p>
-          <button type="button" disabled={busy} onclick={disconnect}>정말 해제</button>
-          <button type="button" disabled={busy} onclick={() => (confirmOff = false)}>취소</button>
+          <div class="actions">
+            <button type="button" disabled={busy} onclick={disconnect}>정말 해제</button>
+            <button type="button" disabled={busy} onclick={() => (confirmOff = false)}>취소</button>
+          </div>
         {:else}
-          <button type="button" disabled={busy} onclick={() => (confirmOff = true)}>연결 해제</button>
+          <div class="actions"><button type="button" disabled={busy} onclick={() => (confirmOff = true)}>연결 해제</button></div>
         {/if}
       {:else}
         <p>연결된 원본이 없어요. 가져오기(JSON)만 쓰고 있어요.</p>
       {/if}
     </section>
-    <section>
-      <h2>{info.connected ? '다른 폴더로 바꾸기' : 'PocketRisu 연결하기'}</h2>
+    <section class="appearance-section" aria-labelledby="source-pick">
+      <h2 id="source-pick">{info.connected ? '다른 폴더로 바꾸기' : 'PocketRisu 연결하기'}</h2>
       <p>PocketRisu 폴더(안에 save 폴더가 있는 곳)를 골라 주세요. PAGE 는 읽기만 하고 아무것도 쓰지 않아요.</p>
-      {#if info.platform === 'win32'}<button type="button" disabled={busy} onclick={browse}>찾아보기</button>{/if}
+      {#if info.platform === 'win32'}
+        <div class="actions"><button type="button" disabled={busy} onclick={browse}>찾아보기</button></div>
+      {/if}
       {#if browsing}<p class="status" role="status">폴더 선택 창을 열었어요. 작업 표시줄에서 찾을 수도 있어요.</p>{/if}
-      <label>폴더 경로 <input name="source-path" type="text" disabled={busy} bind:value={path} oninput={() => { check = null; error = ''; }} /></label>
-      <button type="button" disabled={busy || !path.trim()} onclick={runCheck}>확인</button>
+      <div class="field">
+        <label for="source-path">폴더 경로</label>
+        <input id="source-path" name="source-path" type="text" placeholder="예: C:\Users\나\PocketRisu" disabled={busy} bind:value={path} oninput={() => { check = null; error = ''; }} />
+      </div>
+      <div class="actions"><button type="button" disabled={busy || !path.trim()} onclick={runCheck}>확인</button></div>
       {#if check?.ok}
         <p role="status">PocketRisu 를 찾았어요 · <code>{check.saveDir}</code></p>
-        <button type="button" disabled={busy} onclick={connect}>연결</button>
+        <div class="actions"><button type="button" disabled={busy} onclick={connect}>연결</button></div>
       {/if}
       {#if error}<p class="notice" role="alert">{error}</p>{/if}
     </section>
