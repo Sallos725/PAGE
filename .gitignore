@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.env
+/page-data/
+web/test-results/
+web/playwright-report/

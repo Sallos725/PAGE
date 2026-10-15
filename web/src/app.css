@@ -1,0 +1,103 @@
+:root {
+  color-scheme: light dark;
+  --font-body: "MaruBuri", "Noto Serif KR", "AppleMyungjo", Georgia, serif;
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-ui); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a, button, input, select { transition: color .12s, background-color .12s, border-color .12s, opacity .12s; }
+@media (prefers-reduced-motion: reduce) { a, button, input, select { transition: none; } }
+a { color: var(--accent); }
+.page { max-width: 40rem; margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); }
+.list { list-style: none; padding: 0; margin: 0; }
+.list li { border-bottom: 1px solid var(--line); }
+.list a, .list .empty { display: flex; gap: 8px; align-items: baseline; min-height: 44px; padding: 10px 4px; text-decoration: none; color: inherit; }
+.list .empty { color: var(--muted); }
+.meta { color: var(--muted); font-size: .85em; }
+.status { color: var(--muted); }
+.notice { background: var(--surface-sunken); border-radius: 4px; padding: 10px 12px; }
+.badge { font-size: .75em; padding: 2px 6px; border-radius: 2px; background: var(--surface-sunken); color: var(--muted); }
+nav a { display: inline-block; min-height: 44px; line-height: 44px; }
+
+/* 리더 (스크롤 모드) */
+.reader-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: calc(4px + env(safe-area-inset-top)) 12px 4px;
+  background: var(--bg); border-bottom: 1px solid var(--line); }
+.reader-bar a { min-height: 44px; line-height: 44px; text-decoration: none; }
+.reader-bar label { margin-left: auto; font-size: .9em; color: var(--muted); display: flex; align-items: center; gap: 6px; min-height: 44px; }
+.reader-notice { position: sticky; top: 52px; z-index: 2; margin: 8px auto; max-width: 38rem; }
+.reader-notice button { margin-left: 8px; min-height: 44px; }
+.reader-gone-notice { margin: 8px auto; max-width: 38rem; }
+.scroll { max-width: 38rem; margin: 0 auto; padding: 8px max(18px, env(safe-area-inset-left)) 96px; font-family: var(--font-body); font-size: 18px; line-height: 1.85; }
+.msg { margin: 0 0 1.6em; }
+.msg.user { color: var(--muted); } /* 왼쪽 세로줄은 책 모드 쪽 끝 빈자리까지 이어져 어색했다 — 3A 에서 화자 마커로 구분 */
+.para { margin: 0 0 .9em; overflow-wrap: anywhere; word-break: keep-all; }
+.para.dialogue { margin-left: .4em; }
+.raw { white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.6 ui-monospace, monospace; background: var(--surface-sunken); padding: 10px; border-radius: 2px; }
+.img { margin: 1em 0; text-align: center; }
+.img img { max-width: 100%; height: auto; border-radius: 2px; background: var(--surface-sunken); min-height: 8rem; }
+.img .broken { color: var(--muted); font: .85em var(--font-ui); padding: 1.5em; background: var(--surface-sunken); border-radius: 2px; }
+.divider { border: 0; border-top: 1px solid var(--line); margin: 1.4em 0; }
+.edge { text-align: center; color: var(--muted); font: .85em/20px var(--font-ui); padding: 24px 0; min-height: 68px; } /* 높이 고정: '처음이에요/끝이에요' 가 나중에 들어와도 본문이 밀리지 않는다 */
+.progress { position: fixed; bottom: 0; left: 0; right: 0; padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); font: .8em var(--font-ui);
+  color: var(--muted); text-align: center; background: color-mix(in srgb, var(--bg) 88%, transparent); pointer-events: none; }
+
+/* 모드 전환 · 책 넘김 */
+.reader-bar button.mode { min-height: 44px; padding: 0 12px; border: 1px solid var(--rule-strong); border-radius: 4px; background: transparent; color: inherit; font: inherit; }
+.reader-bar.overlay { position: fixed; left: 0; right: 0; top: 0; z-index: 3; }
+.reader-bar.ui-hidden, .progress.ui-hidden { opacity: 0; pointer-events: none; }
+.reader-bar, .progress { transition: opacity .15s; }
+@media (prefers-reduced-motion: reduce) { .reader-bar, .progress { transition: none; } }
+
+.book { position: fixed; inset: 0; z-index: 1; overflow-x: scroll; overflow-y: hidden; background: var(--bg);
+  scroll-snap-type: x mandatory; scroll-padding-left: 24px; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; outline: none; }
+.book::-webkit-scrollbar { display: none; }
+.book .inner { position: relative; height: 100%; }
+.book .strip { position: absolute; column-fill: auto; font-family: var(--font-body); font-size: 18px; line-height: 1.85; }
+.book .strip .msg { margin: 0 0 1.6em; }
+.book .strip .para { orphans: 2; widows: 2; } /* 쪽 끝·처음에 한 줄만 떨어지지 않게 */
+.book .strip .img { break-inside: avoid; margin: 0 0 1em; }
+.book .strip .img img { max-height: calc(var(--page-h) - 2rem); max-width: 100%; width: auto; height: auto; object-fit: contain; }
+.book .snap, .book .tail { position: absolute; top: 0; width: 1px; height: 1px; pointer-events: none; }
+.book .snap { scroll-snap-align: start; }
+
+/* 단계 3B: 이름 바꾸기 */
+.title-row { display: flex; align-items: center; gap: 4px; }
+.title-row h1 { margin: .4em 0; }
+button.icon { min-width: 44px; min-height: 44px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; }
+button.icon:hover { background: var(--surface-sunken); color: var(--fg); }
+.list li.with-action { display: flex; align-items: center; }
+.list li.with-action > a, .list li.with-action > .empty { flex: 1; min-width: 0; }
+.rename { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; }
+.rename input[type="text"] { flex: 1 1 12rem; min-height: 44px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0 10px; }
+.rename button { min-height: 44px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0 12px; }
+.rename .meta { flex-basis: 100%; }
+
+/* 커스텀 테마: 안전 모드 띠 — 어느 테마·모드에서도 읽히도록 고정 색, 화면 아래에 고정 */
+.safe-banner { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; margin: 0; padding: 10px max(16px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); background: #24221e; color: #f6f4ef; font-family: var(--font-ui); font-size: .9em; text-align: center; }
+.safe-banner a { color: #f6f4ef; text-decoration: underline; }
+
+/* 커스텀 테마: 테마·글꼴 화면 */
+.appearance-page h1 { margin: 12px 0 8px; }
+.appearance-section { margin: 28px 0; }
+.appearance-section h2 { font-size: 1.1em; margin: 0 0 10px; }
+.appearance-section .actions, .theme-editor .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.appearance-section button, .appearance-section .file-button, .appearance-section .button-link {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--surface-raised); color: var(--fg); font: inherit; font-family: var(--font-ui); text-decoration: none; cursor: pointer; }
+.appearance-section button:disabled { color: var(--ink-faint); cursor: default; }
+.file-button:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.item-list { list-style: none; margin: 0; padding: 0; }
+.item { padding: 12px 0; border-top: 1px solid var(--line); }
+.item.active .item-name { color: var(--accent); }
+.item-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.item-name { font-weight: 600; overflow-wrap: anywhere; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.theme-editor { margin-top: 12px; display: grid; gap: 8px; }
+.theme-editor .row { display: flex; align-items: center; gap: 10px; }
+.theme-editor .row input, .theme-editor .row select { flex: 1; min-width: 0; min-height: 40px; }
+.css-label { display: grid; gap: 6px; }
+.css-input { width: 100%; box-sizing: border-box; font: .85em/1.5 ui-monospace, "SF Mono", Menlo, monospace; background: var(--surface-sunken); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; tab-size: 2; }
+.font-sample { margin: 6px 0 0; font-size: 1.1em; }

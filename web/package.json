@@ -1,0 +1,26 @@
+{
+  "name": "page-web",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
+    "e2e": "playwright test --project=chromium",
+    "e2e:webkit": "playwright test --project=webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "^24.19.2",
+    "happy-dom": "^21.0.1",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.6",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  }
+}

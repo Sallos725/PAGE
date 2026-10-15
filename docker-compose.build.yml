@@ -1,0 +1,8 @@
+# 소스에서 직접 빌드할 때 덮어쓰기: docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  page:
+    build: .
+    image: page:local
+  page-pdf:
+    build: ./pdf
+    image: page-pdf:local

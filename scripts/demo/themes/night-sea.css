@@ -1,0 +1,13 @@
+/* @page-theme
+   name: 밤바다
+   base: dark
+*/
+/* 스크린샷용 예시 테마 — 공식 손잡이(색 토큰·data-part)만 쓴다. */
+:root[data-theme] {
+  --bg: #0f1a24; --fg: #dfe6ea; --muted: #9fb0bb; --ink-faint: #8597a3; --line: #263746; --rule-strong: #5f7686;
+  --accent: #7fb8d6; --on-accent: #0b1620; --accent-wash: #1a3040;
+  --surface-raised: #15232f; --surface-sunken: #0a131b; --surface-strong: #2a3d4c; --bubble: #0a131b;
+  --hl-yellow: #4a4527; --hl-green: #2e4434; --hl-blue: #26405a; --hl-pink: #4a3040;
+}
+[data-part="reader-bar"] { border-bottom: 1px solid var(--line); }
+[data-part="message"][data-role="char"] .who { color: var(--accent); }

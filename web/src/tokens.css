@@ -1,0 +1,39 @@
+/* 단계 3-0: 색 토큰 (Quiet Structure, 스펙 §4.1). 이 파일만 토큰을 정의한다.
+   형식 고정 — test/theme-contrast.test.ts 가 파싱한다: 블록 본문에 중괄호 금지, 값은 #rrggbb.
+   data-theme 은 settings.svelte.ts 의 applySettings 가 붙인다. 없으면 기기 설정(system). */
+:root, :root[data-theme="light"] {
+  --bg: #f3f1ec; --fg: #24221e; --muted: #5c574e; --ink-faint: #6a645a; --line: #d8d4ca; --rule-strong: #857f73;
+  --accent: #2b6860; --on-accent: #f6f4ef; --accent-wash: #dde8e3;
+  --surface-raised: #faf9f6; --surface-sunken: #e9e6df; --surface-strong: #2d2a25; --bubble: #e9e6df;
+  --hl-yellow: #efe0a6; --hl-green: #cfe3c6; --hl-blue: #c9dbe8; --hl-pink: #ecd0d6;
+  --shadow-overlay: 0 8px 24px rgb(36 34 30 / 14%);
+}
+:root[data-theme="light"] { color-scheme: light; }
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1a1916; --fg: #e7e3da; --muted: #aaa498; --ink-faint: #948e82; --line: #36342e; --rule-strong: #7a7468;
+  --accent: #6fb5a9; --on-accent: #11201d; --accent-wash: #203530;
+  --surface-raised: #22211d; --surface-sunken: #121110; --surface-strong: #3a372f; --bubble: #121110;
+  --hl-yellow: #4d4526; --hl-green: #33442e; --hl-blue: #2c3d4a; --hl-pink: #4a3138;
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 50%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #1a1916; --fg: #e7e3da; --muted: #aaa498; --ink-faint: #948e82; --line: #36342e; --rule-strong: #7a7468;
+    --accent: #6fb5a9; --on-accent: #11201d; --accent-wash: #203530;
+    --surface-raised: #22211d; --surface-sunken: #121110; --surface-strong: #3a372f; --bubble: #121110;
+    --hl-yellow: #4d4526; --hl-green: #33442e; --hl-blue: #2c3d4a; --hl-pink: #4a3138;
+    --shadow-overlay: 0 8px 24px rgb(0 0 0 / 50%);
+  }
+}
+
+/* 세피아: 시스템에 없는 테마. 같은 규칙(저채도, 본문 4.5:1, 컨트롤 테두리 3:1)으로 정했다. */
+:root[data-theme="sepia"] {
+  color-scheme: light;
+  --bg: #f1e7d0; --fg: #3b2f20; --muted: #5e4f3a; --ink-faint: #6a5942; --line: #dccdb0; --rule-strong: #8c7a5e;
+  --accent: #2b5f58; --on-accent: #f6f4ef; --accent-wash: #d9e2d4;
+  --surface-raised: #f7f0de; --surface-sunken: #e8dcc0; --surface-strong: #3b2f20; --bubble: #e8dcc0;
+  --hl-yellow: #ead79a; --hl-green: #cddcbc; --hl-blue: #c8d6dc; --hl-pink: #e6c9c9;
+  --shadow-overlay: 0 8px 24px rgb(59 47 32 / 16%);
+}

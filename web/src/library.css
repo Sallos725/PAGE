@@ -1,0 +1,90 @@
+/* 단계 3A: 서고 화면. 책등 팔레트는 테마와 무관한 '물건의 색'이다 — test/library-css.test.ts 가 대비를 검사한다. */
+.spine[data-c="0"] { --spine-bg: #4a463f; --spine-fg: #f1eee8; --spine-ribbon: #8fd0c4; }
+.spine[data-c="1"] { --spine-bg: #2f4f4a; --spine-fg: #e9efe9; --spine-ribbon: #8fd0c4; }
+.spine[data-c="2"] { --spine-bg: #6b4a3a; --spine-fg: #f3e9e1; --spine-ribbon: #8fd0c4; }
+.spine[data-c="3"] { --spine-bg: #5a5a44; --spine-fg: #efeee2; --spine-ribbon: #8fd0c4; }
+.spine[data-c="4"] { --spine-bg: #3d4250; --spine-fg: #e6e8ee; --spine-ribbon: #8fd0c4; }
+.spine[data-c="5"] { --spine-bg: #cfc8b8; --spine-fg: #24221e; --spine-ribbon: #1f4d47; }
+.spine[data-c="6"] { --spine-bg: #a89d88; --spine-fg: #24221e; --spine-ribbon: #1f4d47; }
+
+.index { font: 500 11px/16px ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .08em; color: var(--ink-faint); text-transform: uppercase; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin: 24px 0 12px; }
+.section-head h2 { margin: 0; font: 500 12px/16px var(--font-ui); letter-spacing: .02em; }
+.gone-stacks .hint { color: var(--muted); font: .85em var(--font-ui); margin: 0 0 12px; }
+.library-title { font: 400 48px/52px var(--font-body); letter-spacing: -.015em; margin: 8px 0 0; }
+
+.char-image { display: inline-flex; align-items: center; justify-content: center; flex: none; object-fit: cover; border-radius: 2px; background: var(--surface-sunken); color: var(--muted); font-family: var(--font-body); }
+
+.desk-main { display: flex; gap: 16px; align-items: flex-start; text-decoration: none; color: inherit; padding-bottom: 12px; }
+.cover { position: relative; flex: 0 0 92px; height: 132px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px; border-radius: 2px 4px 4px 2px; background: var(--surface-strong); color: #f1eee8; /* on-strong: 두 테마 모두 어두운 표지 위 */ border-left: 6px solid color-mix(in srgb, var(--surface-strong) 70%, #000); }
+.cover-title { font: 12px/16px var(--font-body); text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.desk-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.desk-title { font: 20px/28px var(--font-body); }
+.progress-line { display: block; height: 2px; background: var(--line); margin-top: 8px; }
+.progress-line .fill { display: block; height: 2px; background: var(--accent); }
+.cta { align-self: flex-start; margin-top: 8px; padding: 10px 16px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font: 500 14px/22px var(--font-ui); }
+.desk-row { display: flex; justify-content: space-between; align-items: center; min-height: 44px; border-top: 1px solid var(--line); text-decoration: none; color: inherit; font: 500 14px var(--font-ui); }
+
+.shelf-block { margin-bottom: 16px; }
+.shelf-label { display: flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; color: inherit; }
+.shelf-name { font: 500 14px var(--font-ui); flex: 1; min-width: 0; }
+
+/* 선반: 책등은 바닥 정렬, 줄마다 판자. 판자는 배경의 반복 줄 (행 높이 = 판자 간격). */
+.shelf { --row: 140px; --plank: 6px; display: flex; align-items: flex-end; gap: 0; overflow-x: auto; padding: 0 6px; border-bottom: var(--plank) solid var(--surface-strong); scrollbar-width: none; }
+.shelf.compact { --row: 104px; }
+.shelf.wrap { flex-wrap: wrap; overflow: visible; border-bottom: 0; background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) - var(--plank)), var(--surface-strong) calc(var(--row) - var(--plank)) var(--row)); }
+.shelf.wrap .slot { height: var(--row); padding-bottom: var(--plank); display: flex; align-items: flex-end; }
+.slot { padding-right: 3px; flex: none; }
+.spine { display: block; box-sizing: border-box; writing-mode: vertical-rl; padding: 8px 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-decoration: none; border-radius: 2px 2px 0 0; background: var(--spine-bg); color: var(--spine-fg); font: 12px var(--font-body); }
+.spine.reading { border-top: 4px solid var(--spine-ribbon); }
+.spine.empty { background: transparent; color: var(--ink-faint); border: 1px dashed var(--rule-strong); border-bottom: 0; }
+.spine.kept { border-bottom: 4px solid var(--spine-ribbon); } /* 보관: 아래 띠 (위쪽 4px 는 읽는 중 띠) */
+.spine.empty.kept { border-bottom: 4px solid var(--rule-strong); }
+.spine-title { display: inline; }
+.spine-char { display: inline; opacity: .72; font-size: .9em; }
+.spine-char::after { content: " · "; }
+.spine:focus-visible { outline-offset: -2px; }
+
+@media (min-width: 960px) {
+  .page.library-page { max-width: 1200px; display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 48px 64px; }
+  .library-aside { padding-top: 32px; }
+  .library-aside .library-title { font-size: 80px; line-height: 76px; letter-spacing: -.02em; }
+}
+.view-toggle { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 4px; overflow: hidden; margin: 12px 0 20px; }
+.view-toggle button { min-height: 36px; padding: 0 16px; border: 0; background: transparent; color: var(--muted); font: inherit; }
+.view-toggle button + button { border-left: 1px solid var(--rule-strong); }
+.view-toggle button[aria-pressed="true"] { background: var(--accent-wash); color: var(--fg); font-weight: 500; }
+.recent-title { font-family: var(--font-body); }
+.source-name { font: 500 14px var(--font-ui); margin: 32px 0 0; }
+
+/* 리더 크롬 (3A) */
+.reader-bar { gap: 4px; }
+.reader-bar .tool { display: inline-flex; align-items: center; justify-content: center; }
+.reader-bar a.tool { min-width: 44px; color: var(--muted); }
+.reader-bar button.tool.mode { min-height: 44px; min-width: 44px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); }
+.reader-bar button.tool.mode:hover { background: var(--surface-sunken); color: var(--fg); }
+.reader-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.reader-title-main { font: 500 14px/20px var(--font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reader-bar label { margin-left: 0; }
+.reader-bar button.tool[aria-pressed="true"] { color: var(--accent, var(--fg)); }
+.reader-bar button.tool[aria-pressed="true"] .icon-svg { fill: currentColor; }
+
+.chapter-head { padding: 48px 0 24px; display: flex; flex-direction: column; gap: 6px; break-inside: avoid; }
+.chapter-head h2 { margin: 0; font: 600 28px/36px var(--font-body); letter-spacing: -.01em; }
+.book .chapter-head { padding-top: 0; }
+
+.speaker { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font: 500 14px/22px var(--font-ui); color: var(--fg); break-after: avoid; }
+.speaker .marker { width: 8px; height: 8px; flex: none; background: var(--accent); }
+.msg.user .speaker .marker { background: transparent; border: 1px solid var(--rule-strong); }
+.bubbles .speaker { margin-bottom: 2px; }
+
+.progress { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.progress-bar { display: block; width: min(38rem, 100%); height: 2px; background: var(--line); }
+.progress-bar .fill { display: block; height: 2px; background: var(--accent); }
+
+.sync-now { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; margin: 0 0 8px; }
+.sync-now p { flex-basis: 100%; margin: 0; }
+
+.appearance-link { display: inline-block; margin-top: 8px; color: var(--muted); font-family: var(--font-ui); font-size: .9em; }
+.appearance-link:hover { color: var(--fg); }
+.appearance-link + .appearance-link { margin-left: 12px; }

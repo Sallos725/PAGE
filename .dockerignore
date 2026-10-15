@@ -1,0 +1,12 @@
+.git
+.claude
+**/node_modules
+**/dist
+web/test-results
+web/playwright-report
+web/tools/fonts-src
+tools/
+page-data
+scripts/*/.out
+.env
+pdf/

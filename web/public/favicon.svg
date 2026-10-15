@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- PAGE 파비콘: 선반 위 책등 세 권 (서고 팔레트). 어두운 탭 막대에서도 보이게 다크 모드에선 바탕만 밝힌다. -->
+  <style>
+    .bg { fill: #24221e; }
+    @media (prefers-color-scheme: dark) { .bg { fill: #3a372f; } }
+  </style>
+  <rect class="bg" width="32" height="32" rx="7"/>
+  <rect x="7.5" y="7" width="5.5" height="18" rx="0.6" fill="#f1eee8"/>
+  <rect x="7.5" y="9.6" width="5.5" height="1.2" fill="#857f73"/>
+  <rect x="14" y="10.5" width="4.5" height="14.5" rx="0.6" fill="#8fd0c4"/>
+  <rect x="19.6" y="9" width="5" height="16" rx="0.6" fill="#cfc8b8" transform="rotate(14 19.6 25)"/>
+  <rect x="6" y="25" width="20" height="1.6" rx="0.8" fill="#857f73"/>
+</svg>

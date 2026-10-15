@@ -1,0 +1,30 @@
+{
+  "name": "page-server",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@fastify/helmet": "^13.2.0",
+    "@fastify/static": "^10.1.6",
+    "fastify": "^5.12.7",
+    "fflate": "^0.8.2",
+    "linkedom": "0.18.13",
+    "msgpackr": "~1.11.9",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.4"
+  }
+}
