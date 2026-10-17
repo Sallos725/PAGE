@@ -110,7 +110,7 @@ PDF 내보내기는 같이 올라오는 `page-pdf` 컨테이너(헤드리스 Chr
 | `PAGE_DATA_HOST_DIR` | PAGE 데이터(서고 사본·읽기 상태·테마·글꼴, 기본 `./page-data`). uid 1000 이 쓸 수 있어야 해요. |
 | `PAGE_HOST_PORT` | 호스트 포트 (기본 6008). |
 | `PAGE_HOST_BIND` | 여는 주소 (기본 `127.0.0.1` — 이 컴퓨터에서만). |
-| `PAGE_VERSION` | 이미지 버전 (기본 1.1.0). |
+| `PAGE_VERSION` | 이미지 버전 (기본 1.1.1). |
 | `TZ` | 시간대 (기본 Asia/Seoul). |
 
 컨테이너 안 서버 설정(동기화 주기, 용량 경고 등)은 `PAGE_*` 환경 변수로 바꿀 수 있어요 — [`server/src/config.ts`](server/src/config.ts).

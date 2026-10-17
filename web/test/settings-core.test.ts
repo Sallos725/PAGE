@@ -22,6 +22,9 @@ describe('settings core', () => {
     expect(normalizeSettings({})).toEqual(DEFAULTS);
     const s = normalizeSettings({ fontSize: 5, lineHeight: 9, paraSpacing: -1, width: 100, theme: 'neon', justify: 'yes', indent: true, bubble: 1, mode: 'book', hideUser: 'yes' });
     expect(s).toMatchObject({ fontSize: 14, lineHeight: 2.4, paraSpacing: 0, width: 52, theme: 'system', justify: false, indent: true, bubble: false, mode: 'book', hideUser: false });
+    expect(DEFAULTS).toMatchObject({ spread: true, turnAnim: true });
+    expect(normalizeSettings({ spread: false, turnAnim: false })).toMatchObject({ spread: false, turnAnim: false });
+    expect(normalizeSettings({ spread: 'no', turnAnim: 0 })).toMatchObject({ spread: true, turnAnim: true }); // false 만 끈다
     expect(normalizeSettings({ fontSize: Number.NaN }).fontSize).toBe(DEFAULTS.fontSize);
     expect(normalizeSettings({ fontSize: '20' }).fontSize).toBe(DEFAULTS.fontSize);
   });
@@ -62,8 +65,8 @@ describe('settings core', () => {
 
   it('layoutSignature changes with layout settings only (not theme or mode)', () => {
     const base = layoutSignature(DEFAULTS);
-    expect(layoutSignature({ ...DEFAULTS, theme: 'dark', mode: 'book' })).toBe(base);
-    for (const patch of [{ fontSize: 19 }, { bubble: true }, { font: 'sans' }, { lineHeight: 2 }, { paraSpacing: 0 }, { width: 44 }, { justify: true }, { indent: true }, { hideUser: true }]) {
+    expect(layoutSignature({ ...DEFAULTS, theme: 'dark', mode: 'book', turnAnim: false })).toBe(base);
+    for (const patch of [{ fontSize: 19 }, { bubble: true }, { font: 'sans' }, { lineHeight: 2 }, { paraSpacing: 0 }, { width: 44 }, { justify: true }, { indent: true }, { hideUser: true }, { spread: false }]) {
       expect(layoutSignature({ ...DEFAULTS, ...patch })).not.toBe(base);
     }
   });

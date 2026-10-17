@@ -1,0 +1,15 @@
+{
+  "name": "PAGE",
+  "short_name": "PAGE",
+  "description": "PocketRisu 의 채팅을 웹소설처럼, 전자책처럼 읽는 읽기 전용 서고",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f1ec",
+  "theme_color": "#24221e",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

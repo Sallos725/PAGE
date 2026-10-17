@@ -14,7 +14,9 @@
 .bubbles .msg .block:last-child .para { margin-bottom: 0; }
 
 /* 하이라이트 (색은 tokens.css — 다크도 거기서 바뀐다) */
-mark.hl { color: inherit; border-radius: 2px; padding: 0 .05em; background: var(--hl-yellow); }
+mark.hl { color: inherit; border-radius: 2px; padding: 0 .05em; background: var(--hl-yellow);
+  /* 밑줄: 흑백(e-ink)에선 밝은·세피아 테마의 형광 바탕이 배경과 회색 1단계 차이라 안 보인다. rule-strong 은 배경 대비 3:1 이 보장된다 */
+  text-decoration-line: underline; text-decoration-color: var(--rule-strong); text-decoration-thickness: 2px; text-underline-offset: .2em; }
 mark.hl[data-color="green"] { background: var(--hl-green); }
 mark.hl[data-color="blue"] { background: var(--hl-blue); }
 mark.hl[data-color="pink"] { background: var(--hl-pink); }

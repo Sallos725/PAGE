@@ -434,6 +434,8 @@
         bubble={settings.bubble}
         {highlights}
         {charName}
+        spread={settings.spread}
+        animate={settings.turnAnim}
         {onPosition}
         onPage={(p) => (page = p)}
         onToggleUi={() => (uiVisible = !uiVisible)}

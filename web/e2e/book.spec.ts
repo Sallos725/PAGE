@@ -81,6 +81,40 @@ test.describe('wide screen', () => {
     }, msg);
     expect(visible).toBe(true);
   });
+
+  // e-ink 기기(세로에서도 900px 이상으로 잡히는 경우)를 위해: 펼침을 끄면 넓은 화면에서도 한 쪽씩, 읽던 메시지는 그대로
+  test('turning the two-page spread off shows one page per view and keeps the reading position', async ({ page }) => {
+    await openBook(page);
+    for (let i = 0; i < 3; i++) { await page.keyboard.press('ArrowRight'); await page.waitForTimeout(450); }
+    await settled(page);
+    const before = await info(page);
+    expect(before.perView).toBe(2);
+    await page.getByRole('button', { name: '보기 설정' }).click();
+    await page.getByLabel('두 쪽 펼침(책, 넓은 화면)').uncheck();
+    await expect.poll(async () => (await info(page)).perView).toBe(1);
+    await expect.poll(async () => (await info(page)).views).toBeGreaterThan(before.views);
+    const cols = await page.locator('.book .strip').evaluate((el) => ({ cw: parseFloat(getComputedStyle(el).columnWidth), w: (el as HTMLElement).clientWidth }));
+    expect(cols.cw).toBe(cols.w); // 한 열이 view 폭 전체
+    const msg = before.msg;
+    const visible = await page.locator('.book').evaluate((el, m) => {
+      const sr = (el as HTMLElement).getBoundingClientRect();
+      return [...document.querySelectorAll(`.book .block[data-msg="${m}"]`)].some((b) =>
+        [...b.getClientRects()].some((r) => r.left >= sr.left && r.left < sr.right));
+    }, msg);
+    expect(visible).toBe(true);
+    await expect.poll(async () => ((await (await page.request.get('/api/state/settings')).json()) as { settings: Record<string, unknown> }).settings['reader.spread']).toBe(false);
+  });
+});
+
+// e-ink 는 부드러운 스크롤 중간 프레임이 잔상으로 남는다 → 끄면 한 번에 넘어간다
+test('turning the page-turn animation off jumps straight to the next page', async ({ page, request }) => {
+  await request.put('/api/state/settings', { data: { 'reader.turnAnim': false } });
+  await openBook(page);
+  const stride = await page.locator('.book .snap').evaluateAll((els) => (els[1] as HTMLElement).offsetLeft - (els[0] as HTMLElement).offsetLeft);
+  await page.keyboard.press('ArrowRight');
+  // 애니메이션이면 이 시점엔 아직 가는 중이다 (Chromium 부드러운 스크롤은 450ms 보다 길다)
+  expect(await book(page).evaluate((el) => el.scrollLeft)).toBe(stride);
+  await expect.poll(async () => (await info(page)).view).toBe(1);
 });
 
 test('keyboard: arrows, PageDown/PageUp and Space turn pages', async ({ page }) => {

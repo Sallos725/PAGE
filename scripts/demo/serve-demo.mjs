@@ -1,6 +1,6 @@
 // 데모 서버: README 스크린샷용. 합성 save(직접 지은 짧은 이야기) → 동기화 → 실제 API + 빌드된 SPA 를 4174 에서 서빙.
 // 실제 save·채팅은 전혀 쓰지 않는다. 사전: (cd server && npm run build) && (cd web && npm run build)
-// 사용: node scripts/demo/serve-demo.mjs   (DEMO_PORT 로 포트 변경)
+// 사용: node scripts/demo/serve-demo.mjs   (DEMO_PORT 로 포트 변경, DEMO_PORTABLE=1 이면 Windows 포터블 화면, DEMO_IMPORTED=1 이면 가져온 채팅, DEMO_SOURCE_ID 로 원본 이름)
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,7 +19,11 @@ const { Syncer } = await imp('sync/syncer.js');
 const { buildApp } = await imp('api/app.js');
 const { AppearanceStore } = await imp('state/appearance.js');
 const { ExportManager } = await imp('export/jobs.js');
+const { ImportStore } = await imp('import/store.js');
+const { ImportAdapter } = await imp('source/import/adapter.js');
 
+// DEMO_SOURCE_ID=pocketrisu 면 서고에 'PocketRisu' 로 보인다 (기본 'demo'). DEMO_IMPORTED=1 이면 가져온 채팅 시연 데이터를 넣는다.
+const SRC_ID = process.env.DEMO_SOURCE_ID ?? 'demo';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'page-demo-'));
 const srcDir = path.join(tmp, 'src');
 const dataDir = path.join(tmp, 'data');
@@ -51,6 +55,19 @@ const garden = [
   ['user', '"이 정원, 밤에만 피는 꽃이 있다면서요."'],
   ['char', '"달맞이꽃이요. 해가 지고 한 시간쯤 지나면 하나씩 열려요." 정원사가 호미를 내려놓았다.\n"서두르면 안 보여요. 가만히 있어야 보이는 꽃이거든요."'],
 ];
+
+// 가져온 채팅 시연용 짧은 이야기 (직접 지은 합성 — 실제 채팅 아님)
+const harbor = [
+  ['user', '새벽 시장은 아직 불이 반쯤만 켜져 있었다. 생선 상자 사이로 김이 올랐다.'],
+  ['char', '"일찍 오셨네요. 오늘은 갈치가 좋아요." 좌판 너머에서 서하가 소매를 걷으며 웃었다.\n얼음 위의 은빛이 가로등 아래서 잠깐 반짝였다.'],
+  ['user', '"갈치 말고, 저 등 푸른 건 뭐예요?"'],
+  ['char', '"고등어요. 이쪽이 진짜 새벽 물건이에요." 그녀가 한 마리를 들어 보였다.\n"구워 드릴까요? 옆 가게에 숯불이 있어요."'],
+];
+const umbrella = [
+  ['user', '버스 정류장 지붕 아래, 우산 하나를 둘이 쓰고 있었다.'],
+  ['char', '"어깨 젖어요. 더 안쪽으로 오세요." 서하가 우산을 내 쪽으로 기울였다.\n빗소리가 지붕을 두드리는 동안 우리는 한동안 말이 없었다.'],
+];
+const exportFile = (id, title, rows, lastDate) => ({ type: 'risuChat', ver: 2, data: { id, name: title, lastDate, message: toMsgs(rows) } });
 
 const toMsgs = (rows) => rows.map(([role, text]) => msg(role, text));
 
@@ -92,17 +109,34 @@ const policy = {
   debounceMs: 0, massDeletionRatio: 0.5, warnFreePct: 20, warnFreeBytes: 10e9, stopAssetsFreeBytes: 2e9,
   freeSpace: () => ({ freeBytes: 1e12, totalBytes: 2e12 }),
 };
-const adapter = new PocketRisuAdapter('demo', srcDir);
+const adapter = new PocketRisuAdapter(SRC_ID, srcDir);
+const imports = new ImportStore(dataDir);
+const importAdapter = new ImportAdapter(imports);
 const syncer = new Syncer({ store, now: Date.now, policy });
 await syncer.syncSource(adapter);
+
+// 가져온 채팅: 캐릭터 '서하' 하나와 채팅 둘 (API 가 쓰는 ImportStore 를 그대로 쓰고 그 캐릭터만 동기화).
+if (process.env.DEMO_IMPORTED === '1') {
+const importedCharId = imports.createChar('서하', Date.now());
+imports.setImage(importedCharId, solidPng(0xb0, 0x8f, 0xc4));
+imports.putChats(importedCharId, [
+  { id: 'harbor', title: '새벽 시장', lastDate: Date.now() - 3_600_000, messages: [], raw: exportFile('harbor', '새벽 시장', harbor, Date.now() - 3_600_000).data },
+  { id: 'umbrella', title: '우산 하나', lastDate: Date.now() - 7_200_000, messages: [], raw: exportFile('umbrella', '우산 하나', umbrella, Date.now() - 7_200_000).data },
+]);
+await syncer.syncSource(importAdapter, { force: true, onlyChar: importedCharId });
+}
 
 // 책상이 비지 않게 몇 권을 읽던 상태로 둔다. 앵커는 web/src/lib/position.ts 의 anchorOf(첫 문단, 0) 과 같은 계산
 // (FNV-1a 32bit of `|<앞 16자>`) — 틀리면 리더가 "내용이 바뀌었을 수 있어요" 를 띄운다.
 const fnv1a = (s) => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0'); };
 const startOf = (rows, i) => ({ msgIdx: i, blockIdx: 0, charOffset: 0, anchorHash: fnv1a(`|${rows[i][1].split('\n')[0].trim().slice(0, 16)}`) });
-state.putPosition('demo', 'seoyun', 'lighthouse', startOf(lighthouse, 6), Date.now());
-state.putPosition('demo', 'haneul', 'station', startOf(station, 1), Date.now() - 60_000);
+state.putPosition(SRC_ID, 'seoyun', 'lighthouse', startOf(lighthouse, 6), Date.now());
+state.putPosition(SRC_ID, 'haneul', 'station', startOf(station, 1), Date.now() - 60_000);
 
-const app = await buildApp({ adapters: [adapter], store, syncer, policy, now: Date.now, state, appearance, exportManager, webDir: path.join(root, 'web', 'dist') });
+// DEMO_PORTABLE=1: Windows 포터블처럼 보이게 (원본 연결 화면). 찾아보기는 취소, 재시작은 하지 않는다.
+const portable = process.env.DEMO_PORTABLE === '1'
+  ? { portable: true, portableApi: { dataDir, platform: 'win32', browse: async () => ({ cancelled: true }), restart: () => {} } }
+  : {};
+const app = await buildApp({ adapters: [adapter, importAdapter], imports, store, syncer, policy, now: Date.now, state, appearance, exportManager, webDir: path.join(root, 'web', 'dist'), ...portable });
 await app.listen({ host: '127.0.0.1', port: Number(process.env.DEMO_PORT ?? 4174) });
 console.log(`demo server ready on http://127.0.0.1:${process.env.DEMO_PORT ?? 4174}`);

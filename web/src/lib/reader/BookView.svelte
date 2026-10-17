@@ -22,11 +22,13 @@
     bubble: boolean;
     highlights: Highlight[];
     charName: string;
+    spread: boolean; // 넓은 화면에서 두 쪽 펼침 (끄면 한 쪽씩)
+    animate: boolean; // 쪽 넘김을 부드럽게 스크롤
     onPosition: (p: ReadingPosition) => void;
     onPage: (info: { view: number; views: number }) => void;
     onToggleUi: () => void;
   };
-  let { loader, first, startAt, source, char, showRaw, bubble, highlights, charName, onPosition, onPage, onToggleUi }: Props = $props();
+  let { loader, first, startAt, source, char, showRaw, bubble, highlights, charName, spread, animate, onPosition, onPage, onToggleUi }: Props = $props();
   const two = (n: number) => String(n).padStart(2, '0');
   const timeOf = (t?: number) => (t ? new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
 
@@ -69,7 +71,7 @@
 
   /** 레이아웃 값은 전부 CSSOM 으로 쓴다 — 인라인 style 속성은 CSP(style-src-attr) 위반이다. */
   function applyLayout() {
-    const l = bookLayout(scroller.clientWidth, scroller.clientHeight, insets());
+    const l = bookLayout(scroller.clientWidth, scroller.clientHeight, insets(), spread);
     layout = l;
     perView = l.perView;
     const s = strip.style;
@@ -99,7 +101,7 @@
     if (!layout) return;
     const target = Math.max(0, Math.min(views - 1, i));
     view = target;
-    scroller.scrollTo({ left: target * layout.stride, behavior: smooth && !reduced.matches ? 'smooth' : 'auto' });
+    scroller.scrollTo({ left: target * layout.stride, behavior: smooth && animate && !reduced.matches ? 'smooth' : 'auto' });
   }
 
   function viewOfPosition(pos: ReadingPosition): number | null {

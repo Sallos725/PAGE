@@ -18,11 +18,13 @@ export type ReaderSettings = {
   indent: boolean;
   theme: Theme;
   hideUser: boolean; // 내 메시지 숨기기 (스펙 §5.4)
+  spread: boolean; // 책 모드: 넓은 화면에서 두 쪽 펼침. 끄면 항상 한 쪽씩 (e-ink 등)
+  turnAnim: boolean; // 책 모드: 쪽 넘김을 부드럽게 스크롤. e-ink 는 잔상이 남아 끄는 편이 낫다
 };
 
 export const DEFAULTS: ReaderSettings = {
   mode: 'scroll', bubble: false, font: 'serif', fontSize: 18, lineHeight: 1.85, paraSpacing: 0.9, width: 38,
-  justify: false, indent: false, theme: 'system', hideUser: false,
+  justify: false, indent: false, theme: 'system', hideUser: false, spread: true, turnAnim: true,
 };
 
 export const LIMITS = {
@@ -44,7 +46,7 @@ const CUSTOM_FONT = /^[\p{L}\p{N} ,'"\-_.]{1,120}$/u;
 export const SERVER_KEYS: Record<keyof ReaderSettings, string> = {
   mode: 'reader.mode', bubble: 'reader.bubble', font: 'reader.font', fontSize: 'reader.fontSize', lineHeight: 'reader.lineHeight',
   paraSpacing: 'reader.paraSpacing', width: 'reader.width', justify: 'reader.justify', indent: 'reader.indent', theme: 'reader.theme',
-  hideUser: 'reader.hideUser',
+  hideUser: 'reader.hideUser', spread: 'reader.spread', turnAnim: 'reader.turnAnim',
 };
 
 export const normalizeMode = (v: unknown): ReaderMode => (v === 'book' ? 'book' : 'scroll');
@@ -76,6 +78,8 @@ export function normalizeSettings(raw: Record<string, unknown>): ReaderSettings 
     indent: raw.indent === true,
     theme: theme(raw.theme),
     hideUser: raw.hideUser === true,
+    spread: raw.spread !== false, // 기본 켬: false 만 끈다
+    turnAnim: raw.turnAnim !== false,
   };
 }
 
@@ -118,5 +122,5 @@ export function cssVars(s: ReaderSettings): { vars: Record<string, string>; them
 
 /** 레이아웃(쪽 나눔·줄바꿈)에 영향을 주는 값만. 바뀌면 리더가 현재 위치에서 뷰를 다시 만든다. */
 export function layoutSignature(s: ReaderSettings): string {
-  return JSON.stringify([s.font, s.fontSize, s.lineHeight, s.paraSpacing, s.width, s.justify, s.indent, s.bubble, s.hideUser]);
+  return JSON.stringify([s.font, s.fontSize, s.lineHeight, s.paraSpacing, s.width, s.justify, s.indent, s.bubble, s.hideUser, s.spread]);
 }

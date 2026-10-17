@@ -126,6 +126,8 @@ test('highlight: select text → highlight; shown in both modes and after reload
   await page.getByRole('button', { name: '하이라이트' }).click();
   const mark = page.locator('article[data-msg="2"] mark.hl');
   await expect(mark).toHaveText(BLOCK0(2).slice(2, 9));
+  // 흑백(e-ink) 화면에선 연한 형광 바탕이 안 보인다 → 진한 밑줄을 함께 긋는다
+  expect(await mark.evaluate((el) => getComputedStyle(el).textDecorationLine)).toBe('underline');
   await expect(page.locator('article[data-msg="2"] .block[data-block="0"] p')).toHaveText(BLOCK0(2)); // 글자를 잃지 않는다
 
   await page.reload();

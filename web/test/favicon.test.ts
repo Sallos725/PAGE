@@ -1,4 +1,4 @@
-// 파비콘: 탭·북마크용 SVG + 32px ICO, 아이폰 홈 화면용 180px PNG.
+// 파비콘: 탭·북마크용 SVG + 32px ICO, 아이폰 홈 화면용 180px PNG, 안드로이드 홈 화면(manifest)용 192·512px PNG.
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -12,6 +12,22 @@ describe('favicon', () => {
     expect(html).toContain('<link rel="icon" href="/favicon.ico" sizes="32x32" />');
     expect(html).toContain('<link rel="icon" href="/favicon.svg" type="image/svg+xml" />');
     expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />');
+    expect(html).toContain('<link rel="manifest" href="/manifest.webmanifest" />');
+  });
+
+  it('the manifest makes the app installable (홈 화면에 추가) with opaque 192/512 icons', () => {
+    const m = JSON.parse(pub('manifest.webmanifest').toString('utf8')) as {
+      name: string; start_url: string; display: string; icons: { src: string; sizes: string; type: string }[];
+    };
+    expect(m).toMatchObject({ name: 'PAGE', start_url: '/', display: 'standalone' });
+    expect(m.icons.map((i) => i.sizes).sort()).toEqual(['192x192', '512x512']);
+    for (const i of m.icons) {
+      const png = pub(i.src.replace(/^\//, ''));
+      const n = Number(i.sizes.split('x')[0]);
+      expect(png.subarray(1, 4).toString('latin1')).toBe('PNG');
+      expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([n, n]);
+      expect(png[25]).toBe(2); // 불투명: maskable 아이콘이 투명 모서리 없이 꽉 차게
+    }
   });
 
   it('the SVG is static artwork only (no script, links or external refs)', () => {

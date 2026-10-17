@@ -8,7 +8,7 @@ export const BLOCK0 = (i: number) => `[m${i}-p0] ${'첫 문단 '.repeat(8)}${i}`
 export const DEFAULT_SETTINGS = {
   'reader.mode': 'scroll', 'reader.bubble': false, 'reader.font': 'serif', 'reader.fontSize': 18, 'reader.lineHeight': 1.85,
   'reader.paraSpacing': 0.9, 'reader.width': 38, 'reader.justify': false, 'reader.indent': false, 'reader.theme': 'system',
-  'reader.hideUser': false,
+  'reader.hideUser': false, 'reader.spread': true, 'reader.turnAnim': true,
   'library.shelfView': 'shelf',
 };
 

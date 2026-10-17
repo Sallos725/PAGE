@@ -17,11 +17,12 @@ export type BookLayout = {
 /** 쪽 위·아래에 비울 높이. 헤더(안전영역 포함)와 진행 표시가 본문을 가리지 않게 한다. */
 export type Insets = { top: number; bottom: number };
 
-export function bookLayout(containerW: number, containerH: number, insets: Insets = { top: MARGIN_Y, bottom: MARGIN_Y }): BookLayout {
+/** spread=false 면 넓은 화면에서도 한 쪽씩 (설정 `reader.spread`). */
+export function bookLayout(containerW: number, containerH: number, insets: Insets = { top: MARGIN_Y, bottom: MARGIN_Y }, spread = true): BookLayout {
   const top = Math.max(MARGIN_Y, Math.ceil(insets.top));
   const bottom = Math.max(MARGIN_Y, Math.ceil(insets.bottom));
   const viewWidth = Math.max(200, Math.floor(containerW - 2 * MARGIN_X));
-  const perView: 1 | 2 = containerW >= SPREAD_MIN ? 2 : 1;
+  const perView: 1 | 2 = spread && containerW >= SPREAD_MIN ? 2 : 1;
   return {
     perView,
     colWidth: Math.floor((viewWidth - (perView - 1) * GAP) / perView),

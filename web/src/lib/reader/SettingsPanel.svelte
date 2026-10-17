@@ -62,6 +62,8 @@
   <label class="row"><input type="checkbox" checked={settings.indent} onchange={(e) => update({ indent: e.currentTarget.checked })} /> 첫 줄 들여쓰기</label>
   <label class="row"><input type="checkbox" checked={settings.bubble} onchange={(e) => update({ bubble: e.currentTarget.checked })} /> 말풍선</label>
   <label class="row"><input type="checkbox" checked={settings.hideUser} onchange={(e) => update({ hideUser: e.currentTarget.checked })} /> 내 메시지 숨기기</label>
+  <label class="row"><input type="checkbox" checked={settings.spread} onchange={(e) => update({ spread: e.currentTarget.checked })} /> 두 쪽 펼침(책, 넓은 화면)</label>
+  <label class="row"><input type="checkbox" checked={settings.turnAnim} onchange={(e) => update({ turnAnim: e.currentTarget.checked })} /> 쪽 넘김 애니메이션(책)</label>
   <button type="button" class="wide" onclick={onRules}>숨김 규칙</button>
   <button type="button" class="wide" disabled={!canExport} onclick={onExport}>내보내기</button>
   <label class="row">테마

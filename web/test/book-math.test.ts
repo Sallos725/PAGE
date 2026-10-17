@@ -16,6 +16,11 @@ describe('bookLayout', () => {
     const l = bookLayout(390, 844);
     expect(l).toMatchObject({ perView: 1, viewWidth: 342, colWidth: 342, stride: 342 + GAP, pageHeight: 764 });
   });
+  it('spread off keeps one page even on a wide screen (e-ink 등 넓은 화면에서 한 쪽씩)', () => {
+    const l = bookLayout(1280, 720, undefined, false);
+    expect(l).toMatchObject({ perView: 1, viewWidth: 1280 - 2 * MARGIN_X, colWidth: 1280 - 2 * MARGIN_X });
+    expect(l.stride).toBe(l.viewWidth + GAP);
+  });
   it('top/bottom insets (header, progress bar) shrink the page and move it down', () => {
     const l = bookLayout(1280, 720, { top: 70, bottom: 44 });
     expect(l).toMatchObject({ top: 70, pageHeight: 720 - 70 - 44 });
